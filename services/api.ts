@@ -5,7 +5,7 @@ import { Customer, Transaction, ConnectionType, NewCustomer, NewTransaction, Upd
 // The application will not work until you replace these placeholder values.
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCx_3WVHWXOyJuKVUq86_2hWTpeQ6FBCi0",
+  apiKey: process.env.API_KEY,
   authDomain: "lpg-crm-70b87.firebaseapp.com",
   projectId: "lpg-crm-70b87",
   storageBucket: "lpg-crm-70b87.firebasestorage.app",

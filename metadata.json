@@ -1,0 +1,5 @@
+{
+  "name": "LPG Customer Management System",
+  "description": "A comprehensive customer relationship management (CRM) application designed specifically for LPG (Liquefied Petroleum Gas) distributors. The system helps manage customer profiles, track transaction history, and monitor business statistics.",
+  "requestFramePermissions": []
+}

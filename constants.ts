@@ -41,6 +41,6 @@ export const AGENCIES = [
 ];
 
 
-export const TEMPLATE_HEADERS = ['Name', 'Customer ID', 'Consumer No', 'LPG ID', 'Relation Type', 'Relation Name', 'Mobile No', 'Village', 'Other Village', 'Panchayat', 'Other Panchayat', 'SV No', 'Aadhaar No', 'Connection Type', 'Agency Name', 'Due Date'];
+export const TEMPLATE_HEADERS = ['Name', 'Customer ID', 'Consumer No', 'LPG ID', 'Relation Type', 'Relation Name', 'Mobile No', 'Village', 'Other Village', 'Panchayat', 'Other Panchayat', 'SV No', 'Aadhaar No', 'Connection Type', 'Agency Name', 'Due Date', 'KYC'];
 
 export const GAS_COMPANIES = ['HP', 'BH', 'IN', 'Other'];

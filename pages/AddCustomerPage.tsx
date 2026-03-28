@@ -254,6 +254,7 @@ const ExcelImport: React.FC = () => {
                 connectionType: findColIndex([/^connection\s*type$/i, /^connection$/i]),
                 agencyName: findColIndex([/^agency\s*name$/i, /^agency$/i]),
                 dueDate: findColIndex([/^due\s*date$/i]),
+                kyc: findColIndex([/^kyc$/i]),
             };
 
             // Handle "Other" columns based on proximity to Village/Panchayat
@@ -319,6 +320,8 @@ const ExcelImport: React.FC = () => {
                 const connectionType = getVal(colIndices.connectionType);
                 const agencyName = getVal(colIndices.agencyName);
                 const dueDate = getVal(colIndices.dueDate);
+                const kycRaw = getVal(colIndices.kyc);
+                const kyc = /^(yes|y|true|completed|1)$/i.test(kycRaw);
 
                 // Skip empty rows or rows with "a lot" of missing data
                 // We define "a lot" as missing BOTH Name and Consumer No.
@@ -365,6 +368,7 @@ const ExcelImport: React.FC = () => {
                     balance: 0,
                     agencyName: agencyName || '',
                     dueDate: dueDate || undefined,
+                    kyc: kyc,
                 };
                 
                 if (errors.length > 0) {

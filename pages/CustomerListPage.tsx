@@ -133,7 +133,7 @@ const CustomerListPage: React.FC = () => {
         customer.dueDate || '', customer.kyc ? t('customerListPage.kycCompleted') : t('customerListPage.kycPending')
     ]);
 
-    const worksheetData = [[...TEMPLATE_HEADERS, 'KYC'], ...dataToExport];
+    const worksheetData = [[...TEMPLATE_HEADERS], ...dataToExport];
     
     const ws = XLSX.utils.aoa_to_sheet(worksheetData);
     const wb = XLSX.utils.book_new();

@@ -1,7 +1,9 @@
-
+// Fix: Import the TransactionHistory type from ../types
 import { Customer, Transaction, ConnectionType, NewCustomer, NewTransaction, UpdateTransactionPayload, Delivery, TransactionHistory, RelationType, CustomerDocument, DocumentType } from '../types';
 
-
+// IMPORTANT: Paste your Firebase project configuration here.
+// The application will not work until you replace these placeholder values.
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyCx_3WVHWXOyJuKVUq86_2hWTpeQ6FBCi0",
   authDomain: "lpg-crm-70b87.firebaseapp.com",
@@ -12,7 +14,8 @@ const firebaseConfig = {
   measurementId: "G-0BC5ENNKY4"
 };
 
-
+// Initialize Firebase
+// This will throw an error if the config is not replaced, which is expected.
 const app = (window as any).firebase.initializeApp(firebaseConfig);
 const db = (window as any).firebase.firestore();
 const storage = (window as any).firebase.storage();
@@ -47,6 +50,7 @@ const customerFromDoc = (doc: any): Customer => {
         isDeleted: data.isDeleted || false,
         agencyName: data.agencyName || '',
         kyc: data.kyc || false,
+        lastBookingDate: data.lastBookingDate || null,
     };
 };
 

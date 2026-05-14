@@ -90,6 +90,7 @@ export const translations = {
         all: 'All',
         mark: 'Mark as Booked',
         unmark: 'Unmark Booking',
+        markConfirmation: 'Are you sure you want to mark this booking and add it to pending deliveries?',
         filters: {
             allVillages: 'All Villages',
             allPanchayats: 'All Panchayats',
@@ -289,6 +290,7 @@ export const translations = {
     deliveryPage: {
         title: 'Delivery Tracking',
         requestDelivery: 'Request Delivery',
+        searchPlaceholder: 'Search deliveries...',
         requestedDeliveries: 'Requested Deliveries ({0})',
         completedDeliveries: 'Completed Deliveries',
         headers: {
@@ -316,21 +318,6 @@ export const translations = {
             completeAction: 'Complete & Save Sale',
             completing: 'Completing...',
         }
-    },
-    bookingsPage: {
-        title: '45 Days Booking',
-        all: 'All',
-        marked: 'Marked (Booked)',
-        unmarked: 'Unmarked (Pending)',
-        headers: {
-            name: 'Name',
-            customerId: 'Customer ID',
-            lastBookingDate: 'Last Booking Date',
-            nextBookingDate: 'Next Booking Date',
-            actions: 'Mark Booked',
-        },
-        unmark: 'Unmark',
-        mark: 'Mark',
     },
     passwordModal: {
         title: 'Admin Access Required',
@@ -407,6 +394,8 @@ export const translations = {
             'BINDHYABASINI BHARAT GAS (BIHAR SHARIF)': 'BINDHYABASINI BHARAT GAS (BIHAR SHARIF)',
             'SAMRIDDHI BHARAT GAS GRAMIN VITRAK (SARMERA)': 'SAMRIDDHI BHARAT GAS GRAMIN VITRAK (SARMERA)',
             'BIPIN BHARAT GAS GRAMIN VITRAK (UGMA)': 'BIPIN BHARAT GAS GRAMIN VITRAK (UGMA)',
+            'BELCHI BHARATGAS GRAMIN VITRAK': 'BELCHI BHARATGAS GRAMIN VITRAK',
+            'M/S VINDHYAWASHNI BHARAT GAS': 'M/S VINDHYAWASHNI BHARAT GAS',
             'Other': 'Other'
         }
     }
@@ -503,6 +492,7 @@ export const translations = {
         all: 'सभी',
         mark: 'बुक किए गए के रूप में चिह्नित करें',
         unmark: 'बुकिंग अनमार्क करें',
+        markConfirmation: 'क्या आप वाकई इस बुकिंग को चिह्नित करना चाहते हैं और इसे लंबित डिलीवरी में जोड़ना चाहते हैं?',
         filters: {
             allVillages: 'सभी गांव',
             allPanchayats: 'सभी पंचायत',
@@ -700,6 +690,7 @@ export const translations = {
     deliveryPage: {
         title: 'डिलिवरी ट्रैकिंग',
         requestDelivery: 'डिलिवरी का अनुरोध करें',
+        searchPlaceholder: 'डिलिवरी खोजें...',
         requestedDeliveries: 'अनुरोधित डिलीवरी ({0})',
         completedDeliveries: 'पूरी हो चुकी डिलीवरी',
         headers: {
@@ -727,21 +718,6 @@ export const translations = {
             completeAction: 'पूर्ण करें और बिक्री सहेजें',
             completing: 'पूरा हो रहा है...',
         }
-    },
-    bookingsPage: {
-        title: '45 दिन बुकिंग',
-        all: 'सभी',
-        marked: 'चिह्नित (बुक किया गया)',
-        unmarked: 'अचिह्नित (लंबित)',
-        headers: {
-            name: 'नाम',
-            customerId: 'ग्राहक आईडी',
-            lastBookingDate: 'अंतिम बुकिंग तिथि',
-            nextBookingDate: 'अगली बुकिंग तिथि',
-            actions: 'बुक किया गया चिह्नित करें',
-        },
-        unmark: 'अचिह्नित करें',
-        mark: 'चिह्नित करें',
     },
     passwordModal: {
         title: 'एडमिन एक्सेस आवश्यक',
@@ -818,6 +794,8 @@ export const translations = {
             'BINDHYABASINI BHARAT GAS (BIHAR SHARIF)': 'बिन्ध्यबासिनी भारत गैस (बिहारशरीफ)',
             'SAMRIDDHI BHARAT GAS GRAMIN VITRAK (SARMERA)': 'समृद्धि भारत गैस ग्रामीण वितरक (सरमेरा)',
             'BIPIN BHARAT GAS GRAMIN VITRAK (UGMA)': 'बिपिन भारत गैस ग्रामीण वितरक (उगमा)',
+            'BELCHI BHARATGAS GRAMIN VITRAK': 'बेलछी भारतगैस ग्रामीण वितरक',
+            'M/S VINDHYAWASHNI BHARAT GAS': 'मेसर्स विंध्यवासिनी भारत गैस',
             'Other': 'अन्य'
         }
     }

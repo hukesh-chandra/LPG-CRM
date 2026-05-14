@@ -34,11 +34,32 @@ const BookingsPage: React.FC = () => {
         fetchData();
     }, []);
 
+    const getBookingCycleDays = (agencyName?: string) => {
+        if (agencyName === 'M/S VINDHYAWASHNI BHARAT GAS' || agencyName === 'BINDHYABASINI BHARAT GAS (BIHAR SHARIF)') return 25;
+        return 45;
+    };
+
     const toggleBooking = async (customer: Customer) => {
-        const isUnbooked = !customer.lastBookingDate || (new Date().getTime() - new Date(customer.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= 45;
+        const cycleDays = getBookingCycleDays(customer.agencyName);
+        const isUnbooked = !customer.lastBookingDate || (new Date().getTime() - new Date(customer.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= cycleDays;
+        
+        if (isUnbooked) {
+            if (!window.confirm(t('bookingsPage.markConfirmation') || "Are you sure you want to mark this booking and add it to pending deliveries?")) {
+                return;
+            }
+        }
+        
         const newDate = isUnbooked ? new Date().toISOString() : null;
         try {
             await updateCustomer(customer.id, { lastBookingDate: newDate });
+            if (isUnbooked) {
+                const { addDelivery } = await import('../services/api');
+                try {
+                    await addDelivery(customer.id);
+                } catch(e) {
+                    console.error("Failed to add delivery", e);
+                }
+            }
             fetchData();
         } catch (error) {
             console.error("Failed to update booking status", error);
@@ -60,7 +81,8 @@ const BookingsPage: React.FC = () => {
     const filteredCustomers = useMemo(() => {
         const now = new Date().getTime();
         return customers.filter(c => {
-            const isUnbooked = !c.lastBookingDate || (now - new Date(c.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= 45;
+            const cycleDays = getBookingCycleDays(c.agencyName);
+            const isUnbooked = !c.lastBookingDate || (now - new Date(c.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= cycleDays;
             
             if (filter === 'unmarked' && !isUnbooked) return false;
             if (filter === 'marked' && isUnbooked) return false;
@@ -96,14 +118,16 @@ const BookingsPage: React.FC = () => {
             accessor: c => {
                 if (!c.lastBookingDate) return 'N/A';
                 const next = new Date(c.lastBookingDate);
-                next.setDate(next.getDate() + 45);
+                const cycleDays = getBookingCycleDays(c.agencyName);
+                next.setDate(next.getDate() + cycleDays);
                 return next.toLocaleDateString(locale);
             }
         },
         { 
             header: t('bookingsPage.headers.actions'), 
             accessor: c => {
-                const isUnbooked = !c.lastBookingDate || (new Date().getTime() - new Date(c.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= 45;
+                const cycleDays = getBookingCycleDays(c.agencyName);
+                const isUnbooked = !c.lastBookingDate || (new Date().getTime() - new Date(c.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= cycleDays;
                 return (
                     <div className="flex items-center space-x-2">
                         <input 
@@ -166,7 +190,7 @@ const BookingsPage: React.FC = () => {
                     >
                         <option value="all">{t('bookingsPage.filters.allVillages') || 'All Villages'}</option>
                         {uniqueVillages.map(v => (
-                            <option key={v} value={v}>{(t(`enums.villages.${v}`) !== `enums.villages.${v}` ? t(`enums.villages.${v}`) : v)}</option>
+                            <option key={v} value={v}>{t(`enums.villages.${v}`)}</option>
                         ))}
                     </select>
 
@@ -177,7 +201,7 @@ const BookingsPage: React.FC = () => {
                     >
                         <option value="all">{t('bookingsPage.filters.allPanchayats') || 'All Panchayats'}</option>
                         {uniquePanchayats.map(p => (
-                            <option key={p} value={p}>{(t(`enums.panchayats.${p}`) !== `enums.panchayats.${p}` ? t(`enums.panchayats.${p}`) : p)}</option>
+                            <option key={p} value={p}>{t(`enums.panchayats.${p}`)}</option>
                         ))}
                     </select>
 
@@ -188,7 +212,7 @@ const BookingsPage: React.FC = () => {
                     >
                         <option value="all">{t('bookingsPage.filters.allAgencies') || 'All Agencies'}</option>
                         {uniqueAgencies.map(a => (
-                            <option key={a} value={a}>{(t(`enums.agencies.${a}`) !== `enums.agencies.${a}` ? t(`enums.agencies.${a}`) : a)}</option>
+                            <option key={a} value={a}>{t(`enums.agencies.${a}`)}</option>
                         ))}
                     </select>
                 </div>

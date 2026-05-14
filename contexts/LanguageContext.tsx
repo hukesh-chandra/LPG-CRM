@@ -17,7 +17,23 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [language, setLanguage] = useState<Language>('en');
 
   const t = (key: string, ...args: (string | number)[]): string => {
-    const translation = get(translations[language], key);
+    let translation: any;
+
+    if (key.startsWith('enums.agencies.')) {
+        const agencyKey = key.substring('enums.agencies.'.length);
+        // @ts-ignore
+        translation = translations[language]?.enums?.agencies?.[agencyKey];
+    } else if (key.startsWith('enums.villages.')) {
+        const villageKey = key.substring('enums.villages.'.length);
+        // @ts-ignore
+        translation = translations[language]?.enums?.villages?.[villageKey];
+    } else if (key.startsWith('enums.panchayats.')) {
+        const panchayatKey = key.substring('enums.panchayats.'.length);
+        // @ts-ignore
+        translation = translations[language]?.enums?.panchayats?.[panchayatKey];
+    } else {
+        translation = get(translations[language], key);
+    }
 
     if (typeof translation === 'string') {
         if (!args || args.length === 0) {

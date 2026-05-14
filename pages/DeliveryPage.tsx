@@ -155,6 +155,7 @@ const DeliveryPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [deliveryToComplete, setDeliveryToComplete] = useState<Delivery | null>(null);
+    const [deliverySearch, setDeliverySearch] = useState('');
 
     const fetchData = async () => {
         setLoading(true);
@@ -173,13 +174,33 @@ const DeliveryPage: React.FC = () => {
         fetchData();
     }, []);
 
+    const getBookingCycleDays = (agencyName?: string) => {
+        if (agencyName === 'M/S VINDHYAWASHNI BHARAT GAS' || agencyName === 'BINDHYABASINI BHARAT GAS (BIHAR SHARIF)') return 25;
+        return 45;
+    };
+
     const { requested, completed } = useMemo(() => {
-        const sorted = deliveries.sort((a,b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+        let sorted = deliveries.sort((a,b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+        
+        if (deliverySearch.trim()) {
+            const term = deliverySearch.toLowerCase();
+            sorted = sorted.filter(d => 
+                d.customerName?.toLowerCase().includes(term) ||
+                d.customerMobileNo?.toLowerCase().includes(term) ||
+                d.customerAddress?.toLowerCase().includes(term)
+            );
+        }
+
         return {
-            requested: sorted.filter(d => !d.completedAt),
+            requested: sorted.filter(d => {
+                if (d.completedAt) return false;
+                const customer = customers.find(c => c.id === d.customerId);
+                const cycleDays = getBookingCycleDays(customer?.agencyName);
+                return (new Date().getTime() - new Date(d.requestedAt).getTime()) / (1000 * 3600 * 24) < cycleDays;
+            }),
             completed: sorted.filter(d => d.completedAt),
         }
-    }, [deliveries]);
+    }, [deliveries, deliverySearch, customers]);
 
     const customerInfoAccessor = (d: Delivery) => (
         <div>
@@ -208,9 +229,18 @@ const DeliveryPage: React.FC = () => {
 
     return (
         <div className="space-y-8">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">{t('deliveryPage.title')}</h2>
-                <Button onClick={() => setIsAddModalOpen(true)}>{t('deliveryPage.requestDelivery')}</Button>
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                    <input
+                        type="text"
+                        placeholder={t('deliveryPage.searchPlaceholder') || "Search deliveries..."}
+                        value={deliverySearch}
+                        onChange={(e) => setDeliverySearch(e.target.value)}
+                        className="w-full sm:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    />
+                    <Button onClick={() => setIsAddModalOpen(true)} className="w-full sm:w-auto whitespace-nowrap">{t('deliveryPage.requestDelivery')}</Button>
+                </div>
             </div>
 
             <div>

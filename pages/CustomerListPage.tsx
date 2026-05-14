@@ -222,7 +222,7 @@ const CustomerListPage: React.FC = () => {
     { header: t('customerListPage.headers.village'), accessor: (c) => c.village === 'Other' ? c.otherVillage : t(`enums.villages.${c.village}`) },
     { header: t('customerListPage.headers.agency'), accessor: (c) => c.agencyName ? t(`enums.agencies.${c.agencyName}`) : '' },
     { header: t('customerListPage.headers.connectionType'), accessor: (c) => t(`enums.connectionType.${c.connectionType}` as any) },
-    { header: t('addCustomerPage.form.kyc'), accessor: (c) => c.kyc ? t('addCustomerPage.form.kycCompleted') : t('addCustomerPage.form.kycPending') },
+    { header: t('addCustomerPage.form.kyc'), accessor: (c) => c.kyc ? t('customerListPage.kycCompleted') : t('customerListPage.kycPending') },
     {
       header: t('customerListPage.headers.actions'),
       accessor: (customer) => (

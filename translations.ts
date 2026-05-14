@@ -9,6 +9,7 @@ export const translations = {
         customers: 'Customers',
         addCustomer: 'Add Customer',
         deliveries: 'Deliveries',
+        bookings: '45 Days Booking',
         admin: 'Admin',
         footer: '© 2025 LPG CRM Inc.',
     },
@@ -16,6 +17,7 @@ export const translations = {
         title: 'Dashboard',
         activeCustomers: 'Active Customers',
         pendingDeliveries: 'Pending Deliveries',
+        pendingBookings: 'Pending Bookings (45 Days)',
         completedDeliveries: 'Completed Deliveries',
         outstandingBalance: 'Outstanding Balance',
         recentTransactions: 'Recent Transactions',
@@ -33,6 +35,8 @@ export const translations = {
             sellAction: 'Record Sale',
             success: 'Sale recorded successfully!',
             error: 'Failed to record sale.',
+            customerNote: 'Note: Use "Open" as name for walk-in customers.',
+            unbookedAlert: 'This customer is currently unbooked. Do you want to mark them as booked now?',
         },
         table: {
             customer: 'Customer',
@@ -77,6 +81,21 @@ export const translations = {
             printAction: 'Print',
             printTitle: 'Customer List',
             totalCustomers: 'Total Customers: {0}',
+        }
+    },
+    bookingsPage: {
+        title: '45 Days Bookings',
+        unmarked: 'Unmarked',
+        marked: 'Marked',
+        all: 'All',
+        mark: 'Mark as Booked',
+        unmark: 'Unmark Booking',
+        headers: {
+            name: 'Name',
+            customerId: 'Customer ID',
+            lastBookingDate: 'Last Booking Date',
+            nextBookingDate: 'Next Booking Date',
+            actions: 'Actions',
         }
     },
     addCustomerPage: {
@@ -162,6 +181,9 @@ export const translations = {
         transactionHistory: 'Transaction History',
         addSale: 'Add Sale',
         agencyName: 'Agency Name',
+        bookingStatus: 'Booking Status',
+        bookedUntil: 'Booked (Next: {0})',
+        unbooked: 'Unbooked',
         headers: {
             date: 'Date',
             description: 'Description',
@@ -290,6 +312,21 @@ export const translations = {
             completing: 'Completing...',
         }
     },
+    bookingsPage: {
+        title: '45 Days Booking',
+        all: 'All',
+        marked: 'Marked (Booked)',
+        unmarked: 'Unmarked (Pending)',
+        headers: {
+            name: 'Name',
+            customerId: 'Customer ID',
+            lastBookingDate: 'Last Booking Date',
+            nextBookingDate: 'Next Booking Date',
+            actions: 'Mark Booked',
+        },
+        unmark: 'Unmark',
+        mark: 'Mark',
+    },
     passwordModal: {
         title: 'Admin Access Required',
         prompt: 'Please enter the admin password to continue.',
@@ -379,6 +416,7 @@ export const translations = {
         customers: 'ग्राहक',
         addCustomer: 'ग्राहक जोड़ें',
         deliveries: 'डिलिवरी',
+        bookings: '45 दिन बुकिंग',
         admin: 'एडमिन',
         footer: '© 2025 एलपीजी सीआरएम इंक।',
     },
@@ -386,6 +424,7 @@ export const translations = {
         title: 'डैशबोर्ड',
         activeCustomers: 'सक्रिय ग्राहक',
         pendingDeliveries: 'लंबित डिलीवरी',
+        pendingBookings: 'लंबित बुकिंग (45 दिन)',
         completedDeliveries: 'पूरी हो चुकी डिलीवरी',
         outstandingBalance: 'बकाया शेष राशि',
         recentTransactions: 'हाल के लेनदेन',
@@ -403,6 +442,8 @@ export const translations = {
             sellAction: 'बिक्री दर्ज करें',
             success: 'बिक्री सफलतापूर्वक दर्ज की गई!',
             error: 'बिक्री दर्ज करने में विफल।',
+            customerNote: 'नोट: वॉक-इन ग्राहकों के लिए नाम के रूप में "Open" का प्रयोग करें।',
+            unbookedAlert: 'यह ग्राहक वर्तमान में अनबुक है। क्या आप इसे अभी बुक किया हुआ चिह्नित करना चाहते हैं?',
         },
         table: {
             customer: 'ग्राहक',
@@ -448,6 +489,21 @@ export const translations = {
             printAction: 'प्रिंट',
             printTitle: 'ग्राहक सूची',
             totalCustomers: 'कुल ग्राहक: {0}',
+        }
+    },
+    bookingsPage: {
+        title: '45 दिन बुकिंग',
+        unmarked: 'अनमार्क',
+        marked: 'मार्क किया गया',
+        all: 'सभी',
+        mark: 'बुक किए गए के रूप में चिह्नित करें',
+        unmark: 'बुकिंग अनमार्क करें',
+        headers: {
+            name: 'नाम',
+            customerId: 'ग्राहक आईडी',
+            lastBookingDate: 'अंतिम बुकिंग तिथि',
+            nextBookingDate: 'अगली बुकिंग तिथि',
+            actions: 'कार्रवाई',
         }
     },
     addCustomerPage: {
@@ -531,6 +587,9 @@ export const translations = {
         transactionHistory: 'लेनदेन का इतिहास',
         addSale: 'बिक्री जोड़ें',
         agencyName: 'एजेंसी का नाम',
+        bookingStatus: 'बुकिंग स्थिति',
+        bookedUntil: 'बुक किया गया (अगला: {0})',
+        unbooked: 'अनबुक',
         headers: {
             date: 'तारीख',
             description: 'विवरण',
@@ -658,6 +717,21 @@ export const translations = {
             completeAction: 'पूर्ण करें और बिक्री सहेजें',
             completing: 'पूरा हो रहा है...',
         }
+    },
+    bookingsPage: {
+        title: '45 दिन बुकिंग',
+        all: 'सभी',
+        marked: 'चिह्नित (बुक किया गया)',
+        unmarked: 'अचिह्नित (लंबित)',
+        headers: {
+            name: 'नाम',
+            customerId: 'ग्राहक आईडी',
+            lastBookingDate: 'अंतिम बुकिंग तिथि',
+            nextBookingDate: 'अगली बुकिंग तिथि',
+            actions: 'बुक किया गया चिह्नित करें',
+        },
+        unmark: 'अचिह्नित करें',
+        mark: 'चिह्नित करें',
     },
     passwordModal: {
         title: 'एडमिन एक्सेस आवश्यक',

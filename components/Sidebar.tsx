@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { DashboardIcon, UsersIcon, UserPlusIcon, GasCylinderIcon, ShieldCheckIcon, TruckIcon, XMarkIcon } from './icons/Icons';
+import { DashboardIcon, UsersIcon, UserPlusIcon, GasCylinderIcon, ShieldCheckIcon, TruckIcon, XMarkIcon, ClockIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Route } from '../App';
 
@@ -18,6 +18,8 @@ const getIsActive = (to: string, currentRoute: Route): boolean => {
             return currentRoute.name === 'customers' || currentRoute.name === 'customer-detail' || currentRoute.name === 'add-customer';
         case '/deliveries':
             return currentRoute.name === 'deliveries';
+        case '/bookings':
+            return currentRoute.name === 'bookings';
         case '/admin':
             return currentRoute.name === 'admin';
         default:
@@ -78,6 +80,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRoute, isOpen, onClose }) => {
           <NavItem to="/" icon={<DashboardIcon className="w-6 h-6" />} label={t('sidebar.dashboard')} currentRoute={currentRoute} />
           <NavItem to="/customers" icon={<UsersIcon className="w-6 h-6" />} label={t('sidebar.customers')} currentRoute={currentRoute} />
           <NavItem to="/deliveries" icon={<TruckIcon className="w-6 h-6" />} label={t('sidebar.deliveries')} currentRoute={currentRoute} />
+          <NavItem to="/bookings" icon={<ClockIcon className="w-6 h-6" />} label={t('sidebar.bookings')} currentRoute={currentRoute} />
           <NavItem to="/admin" icon={<ShieldCheckIcon className="w-6 h-6" />} label={t('sidebar.admin')} currentRoute={currentRoute} />
         </nav>
 

@@ -8,6 +8,7 @@ import AddCustomerPage from './pages/AddCustomerPage';
 import CustomerDetailPage from './pages/CustomerDetailPage';
 import AdminPage from './pages/AdminPage';
 import DeliveryPage from './pages/DeliveryPage';
+import BookingsPage from './pages/BookingsPage';
 import PasswordModal from './components/PasswordModal';
 import { useDarkMode } from './hooks/useDarkMode';
 import { checkAdminPassword } from './services/api';
@@ -18,6 +19,7 @@ export type Route =
   | { name: 'customers' }
   | { name: 'add-customer' }
   | { name: 'deliveries' }
+  | { name: 'bookings' }
   | { name: 'admin' }
   | { name: 'customer-detail'; id: string }
   | { name: 'not-found' };
@@ -35,6 +37,8 @@ const parseRoute = (hash: string): Route => {
             return { name: 'add-customer' };
         case 'deliveries':
             return { name: 'deliveries' };
+        case 'bookings':
+            return { name: 'bookings' };
         case 'admin':
             return { name: 'admin' };
         default:
@@ -48,6 +52,7 @@ const routeToPath = (route: Route): string => {
         case 'customers': return '#/customers';
         case 'add-customer': return '#/add-customer';
         case 'deliveries': return '#/deliveries';
+        case 'bookings': return '#/bookings';
         case 'admin': return '#/admin';
         case 'customer-detail': return `#/customers/${route.id}`;
         default: return '#/';
@@ -96,6 +101,8 @@ const AppContent: React.FC = () => {
                 return <AddCustomerPage />;
             case 'deliveries':
                 return <DeliveryPage />;
+            case 'bookings':
+                return <BookingsPage />;
             case 'admin':
                 return <AdminPage />;
             case 'customer-detail':

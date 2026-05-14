@@ -1,11 +1,9 @@
-// Fix: Import the TransactionHistory type from ../types
+
 import { Customer, Transaction, ConnectionType, NewCustomer, NewTransaction, UpdateTransactionPayload, Delivery, TransactionHistory, RelationType, CustomerDocument, DocumentType } from '../types';
 
-// IMPORTANT: Paste your Firebase project configuration here.
-// The application will not work until you replace these placeholder values.
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
 const firebaseConfig = {
-  apiKey: process.env.API_KEY,
+  apiKey: "AIzaSyCx_3WVHWXOyJuKVUq86_2hWTpeQ6FBCi0",
   authDomain: "lpg-crm-70b87.firebaseapp.com",
   projectId: "lpg-crm-70b87",
   storageBucket: "lpg-crm-70b87.firebasestorage.app",
@@ -14,8 +12,7 @@ const firebaseConfig = {
   measurementId: "G-0BC5ENNKY4"
 };
 
-// Initialize Firebase
-// This will throw an error if the config is not replaced, which is expected.
+
 const app = (window as any).firebase.initializeApp(firebaseConfig);
 const db = (window as any).firebase.firestore();
 const storage = (window as any).firebase.storage();
@@ -553,6 +550,18 @@ export const getDashboardStats = async (dateRange?: {start: Date, end: Date}) =>
     const totalOutstanding = allCustomers.reduce((sum, c) => sum + (c.balance < 0 ? -c.balance : 0), 0);
     const pendingDeliveries = pendingDeliveriesSnapshot.size;
     
+    let pendingBookings = 0;
+    allCustomers.forEach(customer => {
+        if (!customer.lastBookingDate) {
+            pendingBookings++;
+        } else {
+            const diffInDays = (new Date().getTime() - new Date(customer.lastBookingDate).getTime()) / (1000 * 3600 * 24);
+            if (diffInDays >= 45) {
+                pendingBookings++;
+            }
+        }
+    });
+    
     const recentTransactions = allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
 
     const recentTransactionsWithCustomer = await Promise.all(recentTransactions.map(async t => {
@@ -571,5 +580,5 @@ export const getDashboardStats = async (dateRange?: {start: Date, end: Date}) =>
         return { ...t, customerName };
     }));
 
-    return { totalCustomers, totalTransactions, totalOutstanding, recentTransactions: recentTransactionsWithCustomer, pendingDeliveries, completedDeliveriesInPeriod };
+    return { totalCustomers, totalTransactions, totalOutstanding, recentTransactions: recentTransactionsWithCustomer, pendingDeliveries, completedDeliveriesInPeriod, pendingBookings };
 }

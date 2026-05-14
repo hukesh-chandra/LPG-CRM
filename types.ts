@@ -28,6 +28,7 @@ export interface Customer {
   isDeleted?: boolean;
   agencyName?: string;
   kyc?: boolean;
+  lastBookingDate?: string;
 }
 
 export type DocumentType = 'aadhaarCard' | 'bankPassbook' | 'consumerCard' | 'svDocument';
@@ -87,3 +88,13 @@ export interface Delivery {
 export type NewCustomer = Omit<Customer, 'id' | 'isDeleted'>;
 export type NewTransaction = Omit<Transaction, 'id' | 'customerId' | 'date' | 'history'>;
 export type UpdateTransactionPayload = Omit<Transaction, 'id' | 'customerId' | 'history'>;
+
+export interface DashboardStats {
+  totalCustomers: number;
+  totalTransactions: number;
+  totalOutstanding: number;
+  recentTransactions: any[];
+  pendingDeliveries: number;
+  completedDeliveriesInPeriod: number;
+  pendingBookings: number;
+}

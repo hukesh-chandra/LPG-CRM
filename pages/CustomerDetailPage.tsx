@@ -18,6 +18,14 @@ const CustomerInfo: React.FC<{ customer: Customer }> = ({ customer }) => {
     const { t, language } = useLanguage();
     const locale = language === 'hi' ? 'hi-IN' : 'en-IN';
 
+    const isUnbooked = !customer.lastBookingDate || (new Date().getTime() - new Date(customer.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= 45;
+    let bookingStatusText = t('customerDetailPage.unbooked');
+    if (!isUnbooked && customer.lastBookingDate) {
+        const nextDate = new Date(customer.lastBookingDate);
+        nextDate.setDate(nextDate.getDate() + 45);
+        bookingStatusText = t('customerDetailPage.bookedUntil', nextDate.toLocaleDateString(locale));
+    }
+
     const details = [
         { label: t('addCustomerPage.form.name'), value: customer.name },
         { label: t('addCustomerPage.form.customerId'), value: customer.customerId },
@@ -33,6 +41,7 @@ const CustomerInfo: React.FC<{ customer: Customer }> = ({ customer }) => {
         { label: t('addCustomerPage.form.kyc'), value: customer.kyc ? t('customerListPage.kycCompleted') : t('customerListPage.kycPending') },
         { label: t('addCustomerPage.form.connectionType'), value: t(`enums.connectionType.${customer.connectionType}` as any) },
         { label: t('addCustomerPage.form.dueDate'), value: customer.dueDate ? new Date(customer.dueDate).toLocaleDateString(locale) : 'N/A' },
+        { label: t('customerDetailPage.bookingStatus'), value: bookingStatusText },
     ];
 
     return (
@@ -250,6 +259,16 @@ const SaleFormModal: React.FC<{
                  savedTransaction = await updateTransaction(saleToEdit.id, { ...formData, date: saleToEdit.date });
             } else {
                  savedTransaction = await addTransaction(customerId, formData);
+                 import('../services/api').then(api => api.getCustomerById(customerId).then(customer => {
+                        if (customer) {
+                            const isUnbooked = !customer.lastBookingDate || (new Date().getTime() - new Date(customer.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= 45;
+                            if (isUnbooked) {
+                                if (window.confirm(t('dashboard.quickSell.unbookedAlert'))) {
+                                    api.updateCustomer(customer.id, { lastBookingDate: new Date().toISOString() });
+                                }
+                            }
+                        }
+                 }));
             }
             onSave(savedTransaction);
             onClose();

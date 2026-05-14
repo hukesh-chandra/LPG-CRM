@@ -28,7 +28,7 @@ export interface Customer {
   isDeleted?: boolean;
   agencyName?: string;
   kyc?: boolean;
-  lastBookingDate?: string;
+  lastBookingDate?: string | null;
 }
 
 export type DocumentType = 'aadhaarCard' | 'bankPassbook' | 'consumerCard' | 'svDocument';

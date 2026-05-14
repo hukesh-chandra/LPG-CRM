@@ -90,6 +90,11 @@ export const translations = {
         all: 'All',
         mark: 'Mark as Booked',
         unmark: 'Unmark Booking',
+        filters: {
+            allVillages: 'All Villages',
+            allPanchayats: 'All Panchayats',
+            allAgencies: 'All Agencies',
+        },
         headers: {
             name: 'Name',
             customerId: 'Customer ID',
@@ -498,6 +503,11 @@ export const translations = {
         all: 'सभी',
         mark: 'बुक किए गए के रूप में चिह्नित करें',
         unmark: 'बुकिंग अनमार्क करें',
+        filters: {
+            allVillages: 'सभी गांव',
+            allPanchayats: 'सभी पंचायत',
+            allAgencies: 'सभी एजेंसियां',
+        },
         headers: {
             name: 'नाम',
             customerId: 'ग्राहक आईडी',

@@ -10,6 +10,13 @@ const BookingsPage: React.FC = () => {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'unmarked' | 'marked' | 'all'>('unmarked');
+    const [villageFilter, setVillageFilter] = useState<string>('all');
+    const [panchayatFilter, setPanchayatFilter] = useState<string>('all');
+    const [agencyFilter, setAgencyFilter] = useState<string>('all');
+
+    const uniqueVillages = useMemo(() => Array.from(new Set(customers.map(c => c.village === 'Other' ? c.otherVillage || 'Other' : c.village).filter(Boolean))), [customers]);
+    const uniquePanchayats = useMemo(() => Array.from(new Set(customers.map(c => c.panchayat === 'Other' ? c.otherPanchayat || 'Other' : c.panchayat).filter(Boolean))), [customers]);
+    const uniqueAgencies = useMemo(() => Array.from(new Set(customers.map(c => c.agencyName).filter(Boolean))), [customers]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -31,7 +38,7 @@ const BookingsPage: React.FC = () => {
         const isUnbooked = !customer.lastBookingDate || (new Date().getTime() - new Date(customer.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= 45;
         const newDate = isUnbooked ? new Date().toISOString() : null;
         try {
-            await updateCustomer(customer.id, { lastBookingDate: newDate ?? undefined });
+            await updateCustomer(customer.id, { lastBookingDate: newDate });
             fetchData();
         } catch (error) {
             console.error("Failed to update booking status", error);
@@ -39,22 +46,50 @@ const BookingsPage: React.FC = () => {
         }
     };
 
+    const updateBookingDate = async (customer: Customer, dateString: string) => {
+        try {
+            const newDate = dateString ? new Date(dateString).toISOString() : null;
+            await updateCustomer(customer.id, { lastBookingDate: newDate });
+            fetchData();
+        } catch (error) {
+            console.error("Failed to update booking date", error);
+            alert("Error updating booking date.");
+        }
+    };
+
     const filteredCustomers = useMemo(() => {
         const now = new Date().getTime();
         return customers.filter(c => {
             const isUnbooked = !c.lastBookingDate || (now - new Date(c.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= 45;
-            if (filter === 'unmarked') return isUnbooked;
-            if (filter === 'marked') return !isUnbooked;
+            
+            if (filter === 'unmarked' && !isUnbooked) return false;
+            if (filter === 'marked' && isUnbooked) return false;
+
+            const cVillage = c.village === 'Other' ? c.otherVillage : c.village;
+            if (villageFilter !== 'all' && cVillage !== villageFilter) return false;
+
+            const cPanchayat = c.panchayat === 'Other' ? c.otherPanchayat : c.panchayat;
+            if (panchayatFilter !== 'all' && cPanchayat !== panchayatFilter) return false;
+
+            if (agencyFilter !== 'all' && c.agencyName !== agencyFilter) return false;
+
             return true;
         });
-    }, [customers, filter]);
+    }, [customers, filter, villageFilter, panchayatFilter, agencyFilter]);
 
     const columns: Column<Customer>[] = [
         { header: t('bookingsPage.headers.name'), accessor: 'name' },
         { header: t('bookingsPage.headers.customerId'), accessor: 'customerId' },
         { 
             header: t('bookingsPage.headers.lastBookingDate'), 
-            accessor: c => c.lastBookingDate ? new Date(c.lastBookingDate).toLocaleDateString(locale) : 'N/A' 
+            accessor: c => (
+                <input 
+                    type="date"
+                    value={c.lastBookingDate ? c.lastBookingDate.split('T')[0] : ''}
+                    onChange={(e) => updateBookingDate(c, e.target.value)}
+                    className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-transparent dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 max-w-[140px]"
+                />
+            )
         },
         { 
             header: t('bookingsPage.headers.nextBookingDate'), 
@@ -92,34 +127,71 @@ const BookingsPage: React.FC = () => {
         <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">{t('bookingsPage.title')}</h2>
             
-            <div className="flex items-center space-x-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-                <label className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
-                    <input 
-                        type="radio" 
-                        checked={filter === 'unmarked'} 
-                        onChange={() => setFilter('unmarked')} 
-                        className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <span>{t('bookingsPage.unmarked')}</span>
-                </label>
-                <label className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
-                    <input 
-                        type="radio" 
-                        checked={filter === 'marked'} 
-                        onChange={() => setFilter('marked')} 
-                        className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <span>{t('bookingsPage.marked')}</span>
-                </label>
-                <label className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
-                    <input 
-                        type="radio" 
-                        checked={filter === 'all'} 
-                        onChange={() => setFilter('all')} 
-                        className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <span>{t('bookingsPage.all')}</span>
-                </label>
+            <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                <div className="flex items-center space-x-4">
+                    <label className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
+                        <input 
+                            type="radio" 
+                            checked={filter === 'unmarked'} 
+                            onChange={() => setFilter('unmarked')} 
+                            className="text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>{t('bookingsPage.unmarked')}</span>
+                    </label>
+                    <label className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
+                        <input 
+                            type="radio" 
+                            checked={filter === 'marked'} 
+                            onChange={() => setFilter('marked')} 
+                            className="text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>{t('bookingsPage.marked')}</span>
+                    </label>
+                    <label className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
+                        <input 
+                            type="radio" 
+                            checked={filter === 'all'} 
+                            onChange={() => setFilter('all')} 
+                            className="text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>{t('bookingsPage.all')}</span>
+                    </label>
+                </div>
+
+                <div className="flex-1 flex flex-wrap gap-4 md:justify-end">
+                    <select
+                        value={villageFilter}
+                        onChange={(e) => setVillageFilter(e.target.value)}
+                        className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                        <option value="all">{t('bookingsPage.filters.allVillages') || 'All Villages'}</option>
+                        {uniqueVillages.map(v => (
+                            <option key={v} value={v}>{(t(`enums.villages.${v}`) !== `enums.villages.${v}` ? t(`enums.villages.${v}`) : v)}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={panchayatFilter}
+                        onChange={(e) => setPanchayatFilter(e.target.value)}
+                        className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                        <option value="all">{t('bookingsPage.filters.allPanchayats') || 'All Panchayats'}</option>
+                        {uniquePanchayats.map(p => (
+                            <option key={p} value={p}>{(t(`enums.panchayats.${p}`) !== `enums.panchayats.${p}` ? t(`enums.panchayats.${p}`) : p)}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={agencyFilter}
+                        onChange={(e) => setAgencyFilter(e.target.value)}
+                        className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                        <option value="all">{t('bookingsPage.filters.allAgencies') || 'All Agencies'}</option>
+                        {uniqueAgencies.map(a => (
+                            <option key={a} value={a}>{(t(`enums.agencies.${a}`) !== `enums.agencies.${a}` ? t(`enums.agencies.${a}`) : a)}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">

@@ -8,6 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Select from '../components/Select';
+import { CustomerInfo } from '../components/CustomerInfo';
 
 import { GAS_COMPANIES } from '../constants';
 
@@ -146,10 +147,10 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
                                     filteredCustomers.map(c => (
                                         <div 
                                             key={c.id} 
-                                            className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-gray-900 dark:text-white"
+                                            className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                                             onClick={() => handleCustomerSelect(c)}
                                         >
-                                            {c.name} - {c.mobileNo} ({c.consumerNo})
+                                            <CustomerInfo customer={c} />
                                         </div>
                                     ))
                                 ) : (

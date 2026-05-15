@@ -218,6 +218,16 @@ const DeliveryPage: React.FC = () => {
         );
     };
 
+    const formatDate = (dateString?: string | null) => {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'N/A';
+        const dd = String(date.getDate()).padStart(2, '0');
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const yy = String(date.getFullYear()).slice(2);
+        return `${dd}/${mm}/${yy}`;
+    };
+
     const handleExportPending = () => {
         if (typeof (window as any).XLSX === 'undefined') {
             alert("Export unavailable");
@@ -227,18 +237,21 @@ const DeliveryPage: React.FC = () => {
         
         const dataToExport = requested.map(d => {
             const customer = customers.find(c => c.id === d.customerId);
+            const relation = customer ? `${customer.relationType || ''} ${customer.relationName || ''}`.trim() : `${d.customerRelationType || ''} ${d.customerRelationName || ''}`.trim();
+            const villageName = customer ? (customer.village === 'Other' ? customer.otherVillage : t(`enums.villages.${customer.village}`)) : '';
+
             return [
                 d.customerName, 
-                customer?.customerId || '', 
+                relation,
                 d.customerMobileNo, 
-                customer?.village || '', 
-                customer?.panchayat || '', 
-                customer?.agencyName || '', 
-                new Date(d.requestedAt).toLocaleDateString()
+                villageName,
+                customer?.customerId || '', 
+                customer?.consumerNo || '',
+                formatDate(d.requestedAt)
             ];
         });
 
-        const headers = ['Name', 'Customer ID', 'Mobile No', 'Village', 'Panchayat', 'Agency', 'Requested Date'];
+        const headers = ['Name', 'Relation Name', 'Mobile No', 'Village', 'Customer ID', 'Consumer No', 'Requested Date'];
         const worksheetData = [headers, ...dataToExport];
         
         const ws = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -258,35 +271,68 @@ const DeliveryPage: React.FC = () => {
             <thead>
                 <tr style="background-color: #f2f2f2;">
                     <th style="padding: 8px; text-align: left;">Name</th>
-                    <th style="padding: 8px; text-align: left;">Customer ID</th>
+                    <th style="padding: 8px; text-align: left;">Relation Name</th>
                     <th style="padding: 8px; text-align: left;">Mobile No</th>
                     <th style="padding: 8px; text-align: left;">Village</th>
-                    <th style="padding: 8px; text-align: left;">Agency</th>
+                    <th style="padding: 8px; text-align: left;">Customer ID</th>
+                    <th style="padding: 8px; text-align: left;">Consumer No</th>
                     <th style="padding: 8px; text-align: left;">Requested Date</th>
                 </tr>
             </thead>
             <tbody>
                 ${requested.map(d => {
                     const customer = customers.find(c => c.id === d.customerId);
+                    const relation = customer ? `${customer.relationType || ''} ${customer.relationName || ''}`.trim() : `${d.customerRelationType || ''} ${d.customerRelationName || ''}`.trim();
+                    const villageName = customer ? (customer.village === 'Other' ? customer.otherVillage : t(`enums.villages.${customer.village}`)) : '';
                     return `
                     <tr>
                         <td style="padding: 8px;">${d.customerName}</td>
-                        <td style="padding: 8px;">${customer?.customerId || ''}</td>
+                        <td style="padding: 8px;">${relation}</td>
                         <td style="padding: 8px;">${d.customerMobileNo}</td>
-                        <td style="padding: 8px;">${customer?.village || ''}</td>
-                        <td style="padding: 8px;">${customer?.agencyName || ''}</td>
-                        <td style="padding: 8px;">${new Date(d.requestedAt).toLocaleDateString()}</td>
+                        <td style="padding: 8px;">${villageName}</td>
+                        <td style="padding: 8px;">${customer?.customerId || ''}</td>
+                        <td style="padding: 8px;">${customer?.consumerNo || ''}</td>
+                        <td style="padding: 8px;">${formatDate(d.requestedAt)}</td>
                     </tr>
                 `}).join('')}
             </tbody>
         </table>`;
         
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yy = String(today.getFullYear()).slice(2);
+        const printDate = `${dd}/${mm}/${yy}`;
+
         printWindow.document.write(`
             <html>
-                <head><title>Print Pending Deliveries</title></head>
+                <head>
+                    <title>Print Pending Deliveries</title>
+                    <style>
+                        @media print {
+                            body { font-family: sans-serif; }
+                            .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+                            .header h1 { margin: 0; }
+                            .header p { margin: 5px 0 0 0; }
+                            .date-text { font-weight: bold; }
+                        }
+                        body { font-family: sans-serif; }
+                        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+                        .header h1 { margin: 0; }
+                        .header p { margin: 5px 0 0 0; }
+                        .date-text { font-weight: bold; }
+                    </style>
+                </head>
                 <body>
-                    <h1>Pending Deliveries</h1>
-                    <p>Total: ${requested.length}</p>
+                    <div class="header">
+                        <div>
+                            <h1>Pending Deliveries</h1>
+                            <p>Total: ${requested.length}</p>
+                        </div>
+                        <div class="date-text">
+                            Date: ${printDate}
+                        </div>
+                    </div>
                     ${tableHtml}
                 </body>
             </html>

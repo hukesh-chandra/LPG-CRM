@@ -10,19 +10,11 @@ import { CustomerInfo } from '../components/CustomerInfo';
 
 const PRINTABLE_COLUMNS = [
     { key: 'name', header: 'Name' },
-    { key: 'customerId', header: 'Customer ID' },
-    { key: 'consumerNo', header: 'Consumer No' },
-    { key: 'lpgId', header: 'LPG ID' },
-    { key: 'relation', header: 'Relation' },
+    { key: 'relation', header: 'Relation Name' },
     { key: 'mobileNo', header: 'Mobile No' },
     { key: 'village', header: 'Village' },
-    { key: 'panchayat', header: 'Panchayat' },
-    { key: 'svNo', header: 'SV No' },
-    { key: 'aadhaarNo', header: 'Aadhaar No' },
-    { key: 'connectionType', header: 'Connection Type' },
-    { key: 'agencyName', header: 'Agency Name' },
-    { key: 'balance', header: 'Due Amount' },
-    { key: 'kyc', header: 'KYC' },
+    { key: 'customerId', header: 'Customer ID' },
+    { key: 'consumerNo', header: 'Consumer No' },
 ];
 
 const PrintModal: React.FC<{
@@ -187,16 +179,45 @@ const CustomerListPage: React.FC = () => {
         </tbody>
     </table>`;
     
-    printWindow.document.write(`
-        <html>
-            <head><title>${t('customerListPage.printModal.printTitle')}</title></head>
-            <body>
-                <h1>${t('customerListPage.printModal.printTitle')}</h1>
-                <p>${t('customerListPage.printModal.totalCustomers', filteredCustomers.length)}</p>
-                ${tableHtml}
-            </body>
-        </html>
-    `);
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yy = String(today.getFullYear()).slice(2);
+        const printDate = `${dd}/${mm}/${yy}`;
+
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>${t('customerListPage.printModal.printTitle')}</title>
+                    <style>
+                        @media print {
+                            body { font-family: sans-serif; }
+                            .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+                            .header h1 { margin: 0; }
+                            .header p { margin: 5px 0 0 0; }
+                            .date-text { font-weight: bold; }
+                        }
+                        body { font-family: sans-serif; }
+                        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+                        .header h1 { margin: 0; }
+                        .header p { margin: 5px 0 0 0; }
+                        .date-text { font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div>
+                            <h1>${t('customerListPage.printModal.printTitle')}</h1>
+                            <p>${t('customerListPage.printModal.totalCustomers', filteredCustomers.length)}</p>
+                        </div>
+                        <div class="date-text">
+                            Date: ${printDate}
+                        </div>
+                    </div>
+                    ${tableHtml}
+                </body>
+            </html>
+        `);
     printWindow.document.close();
     printWindow.print();
     setIsPrintModalOpen(false);

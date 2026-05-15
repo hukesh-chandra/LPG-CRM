@@ -31,6 +31,16 @@ const BookingsPage: React.FC = () => {
         setVillageFilter('all');
     };
 
+    const formatDate = (dateString?: string | null) => {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'N/A';
+        const dd = String(date.getDate()).padStart(2, '0');
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const yy = String(date.getFullYear()).slice(2);
+        return `${dd}/${mm}/${yy}`;
+    };
+
     const handleExport = () => {
         if (typeof (window as any).XLSX === 'undefined') {
             alert("Export unavailable");
@@ -39,10 +49,29 @@ const BookingsPage: React.FC = () => {
         const XLSX = (window as any).XLSX;
         
         const dataToExport = filteredCustomers.map(customer => {
-            return [customer.name, customer.customerId, customer.mobileNo, customer.village, customer.panchayat, customer.agencyName, customer.lastBookingDate ? new Date(customer.lastBookingDate).toLocaleDateString() : 'N/A'];
+            const relation = `${customer.relationType || ''} ${customer.relationName || ''}`.trim();
+            const villageName = customer.village === 'Other' ? customer.otherVillage : t(`enums.villages.${customer.village}`);
+            
+            let nextBookingDate = 'N/A';
+            if (customer.lastBookingDate) {
+                const next = new Date(customer.lastBookingDate);
+                next.setDate(next.getDate() + getBookingCycleDays(customer.agencyName));
+                nextBookingDate = formatDate(next.toISOString());
+            }
+
+            return [
+                customer.name, 
+                relation,
+                customer.mobileNo, 
+                villageName,
+                customer.customerId, 
+                customer.consumerNo,
+                formatDate(customer.lastBookingDate),
+                nextBookingDate
+            ];
         });
 
-        const headers = ['Name', 'Customer ID', 'Mobile No', 'Village', 'Panchayat', 'Agency', 'Last Booking Date'];
+        const headers = ['Name', 'Relation Name', 'Mobile No', 'Village', 'Customer ID', 'Consumer No', 'Last Booking Date', 'Next Booking Date'];
         const worksheetData = [headers, ...dataToExport];
         
         const ws = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -62,33 +91,75 @@ const BookingsPage: React.FC = () => {
             <thead>
                 <tr style="background-color: #f2f2f2;">
                     <th style="padding: 8px; text-align: left;">Name</th>
-                    <th style="padding: 8px; text-align: left;">Customer ID</th>
+                    <th style="padding: 8px; text-align: left;">Relation Name</th>
                     <th style="padding: 8px; text-align: left;">Mobile No</th>
                     <th style="padding: 8px; text-align: left;">Village</th>
-                    <th style="padding: 8px; text-align: left;">Agency</th>
+                    <th style="padding: 8px; text-align: left;">Customer ID</th>
+                    <th style="padding: 8px; text-align: left;">Consumer No</th>
                     <th style="padding: 8px; text-align: left;">Last Booking Date</th>
+                    <th style="padding: 8px; text-align: left;">Next Booking Date</th>
                 </tr>
             </thead>
             <tbody>
-                ${filteredCustomers.map(c => `
+                ${filteredCustomers.map(c => {
+                    const relation = `${c.relationType || ''} ${c.relationName || ''}`.trim();
+                    const villageName = c.village === 'Other' ? c.otherVillage : t(`enums.villages.${c.village}`);
+                    let nextBookingDate = 'N/A';
+                    if (c.lastBookingDate) {
+                        const next = new Date(c.lastBookingDate);
+                        next.setDate(next.getDate() + getBookingCycleDays(c.agencyName));
+                        nextBookingDate = formatDate(next.toISOString());
+                    }
+                    return `
                     <tr>
                         <td style="padding: 8px;">${c.name}</td>
-                        <td style="padding: 8px;">${c.customerId}</td>
+                        <td style="padding: 8px;">${relation}</td>
                         <td style="padding: 8px;">${c.mobileNo}</td>
-                        <td style="padding: 8px;">${c.village}</td>
-                        <td style="padding: 8px;">${c.agencyName || ''}</td>
-                        <td style="padding: 8px;">${c.lastBookingDate ? new Date(c.lastBookingDate).toLocaleDateString() : 'N/A'}</td>
+                        <td style="padding: 8px;">${villageName}</td>
+                        <td style="padding: 8px;">${c.customerId}</td>
+                        <td style="padding: 8px;">${c.consumerNo || ''}</td>
+                        <td style="padding: 8px;">${formatDate(c.lastBookingDate)}</td>
+                        <td style="padding: 8px;">${nextBookingDate}</td>
                     </tr>
-                `).join('')}
+                `}).join('')}
             </tbody>
         </table>`;
         
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yy = String(today.getFullYear()).slice(2);
+        const printDate = `${dd}/${mm}/${yy}`;
+
         printWindow.document.write(`
             <html>
-                <head><title>Print Bookings</title></head>
+                <head>
+                    <title>Print Bookings</title>
+                    <style>
+                        @media print {
+                            body { font-family: sans-serif; }
+                            .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+                            .header h1 { margin: 0; }
+                            .header p { margin: 5px 0 0 0; }
+                            .date-text { font-weight: bold; }
+                        }
+                        body { font-family: sans-serif; }
+                        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+                        .header h1 { margin: 0; }
+                        .header p { margin: 5px 0 0 0; }
+                        .date-text { font-weight: bold; }
+                    </style>
+                </head>
                 <body>
-                    <h1>Bookings</h1>
-                    <p>Total: ${filteredCustomers.length}</p>
+                    <div class="header">
+                        <div>
+                            <h1>Bookings</h1>
+                            <p>Total: ${filteredCustomers.length}</p>
+                        </div>
+                        <div class="date-text">
+                            Date: ${printDate}
+                        </div>
+                    </div>
                     ${tableHtml}
                 </body>
             </html>

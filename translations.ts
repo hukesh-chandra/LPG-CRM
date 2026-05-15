@@ -9,7 +9,7 @@ export const translations = {
         customers: 'Customers',
         addCustomer: 'Add Customer',
         deliveries: 'Deliveries',
-        bookings: '45 Days Booking',
+        bookings: 'Bookings',
         admin: 'Admin',
         footer: '© 2025 LPG CRM Inc.',
     },
@@ -17,7 +17,7 @@ export const translations = {
         title: 'Dashboard',
         activeCustomers: 'Active Customers',
         pendingDeliveries: 'Pending Deliveries',
-        pendingBookings: 'Pending Bookings (45 Days)',
+        pendingBookings: 'Pending Bookings',
         completedDeliveries: 'Completed Deliveries',
         outstandingBalance: 'Outstanding Balance',
         recentTransactions: 'Recent Transactions',
@@ -84,7 +84,7 @@ export const translations = {
         }
     },
     bookingsPage: {
-        title: '45 Days Bookings',
+        title: 'Bookings',
         unmarked: 'Unmarked',
         marked: 'Marked',
         all: 'All',
@@ -395,7 +395,6 @@ export const translations = {
             'SAMRIDDHI BHARAT GAS GRAMIN VITRAK (SARMERA)': 'SAMRIDDHI BHARAT GAS GRAMIN VITRAK (SARMERA)',
             'BIPIN BHARAT GAS GRAMIN VITRAK (UGMA)': 'BIPIN BHARAT GAS GRAMIN VITRAK (UGMA)',
             'BELCHI BHARATGAS GRAMIN VITRAK': 'BELCHI BHARATGAS GRAMIN VITRAK',
-            'M/S VINDHYAWASHNI BHARAT GAS': 'M/S VINDHYAWASHNI BHARAT GAS',
             'Other': 'Other'
         }
     }
@@ -410,7 +409,7 @@ export const translations = {
         customers: 'ग्राहक',
         addCustomer: 'ग्राहक जोड़ें',
         deliveries: 'डिलिवरी',
-        bookings: '45 दिन बुकिंग',
+        bookings: 'बुकिंग',
         admin: 'एडमिन',
         footer: '© 2025 एलपीजी सीआरएम इंक।',
     },
@@ -418,7 +417,7 @@ export const translations = {
         title: 'डैशबोर्ड',
         activeCustomers: 'सक्रिय ग्राहक',
         pendingDeliveries: 'लंबित डिलीवरी',
-        pendingBookings: 'लंबित बुकिंग (45 दिन)',
+        pendingBookings: 'लंबित बुकिंग',
         completedDeliveries: 'पूरी हो चुकी डिलीवरी',
         outstandingBalance: 'बकाया शेष राशि',
         recentTransactions: 'हाल के लेनदेन',
@@ -486,7 +485,7 @@ export const translations = {
         }
     },
     bookingsPage: {
-        title: '45 दिन बुकिंग',
+        title: 'बुकिंग',
         unmarked: 'अनमार्क',
         marked: 'मार्क किया गया',
         all: 'सभी',
@@ -795,7 +794,6 @@ export const translations = {
             'SAMRIDDHI BHARAT GAS GRAMIN VITRAK (SARMERA)': 'समृद्धि भारत गैस ग्रामीण वितरक (सरमेरा)',
             'BIPIN BHARAT GAS GRAMIN VITRAK (UGMA)': 'बिपिन भारत गैस ग्रामीण वितरक (उगमा)',
             'BELCHI BHARATGAS GRAMIN VITRAK': 'बेलछी भारतगैस ग्रामीण वितरक',
-            'M/S VINDHYAWASHNI BHARAT GAS': 'मेसर्स विंध्यवासिनी भारत गैस',
             'Other': 'अन्य'
         }
     }

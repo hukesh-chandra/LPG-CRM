@@ -4,6 +4,7 @@ import { Customer, Transaction } from '../types';
 import DataTable, { Column } from '../components/DataTable';
 import Button from '../components/Button';
 import { useLanguage } from '../contexts/LanguageContext';
+import { CustomerInfo } from '../components/CustomerInfo';
 
 const AdminPage: React.FC = () => {
     const { t, language } = useLanguage();
@@ -70,8 +71,7 @@ const AdminPage: React.FC = () => {
     }, [customers, searchTerm]);
     
     const customerColumns: Column<Customer>[] = [
-        { header: t('adminPage.headers.name'), accessor: 'name' },
-        { header: t('adminPage.headers.customerId'), accessor: 'customerId' },
+        { header: t('adminPage.headers.name'), accessor: c => <CustomerInfo customer={c} /> },
         { header: t('adminPage.headers.agency'), accessor: c => c.agencyName ? t(`enums.agencies.${c.agencyName}`) : '' },
         { header: t('adminPage.headers.status'), accessor: c => (
             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${

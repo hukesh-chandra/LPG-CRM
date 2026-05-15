@@ -8,6 +8,7 @@ import Modal from '../components/Modal';
 import Input from '../components/Input';
 import Select from '../components/Select';
 import { useLanguage } from '../contexts/LanguageContext';
+import { CustomerInfo } from '../components/CustomerInfo';
 
 const AddDeliveryModal: React.FC<{
     customers: Customer[];
@@ -202,14 +203,97 @@ const DeliveryPage: React.FC = () => {
         }
     }, [deliveries, deliverySearch, customers]);
 
-    const customerInfoAccessor = (d: Delivery) => (
-        <div>
-            <p className="font-semibold">{d.customerName}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{d.customerRelationType} {d.customerRelationName}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Mob: {d.customerMobileNo}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{d.customerAddress}</p>
-        </div>
-    );
+    const customerInfoAccessor = (d: Delivery) => {
+        const customer = customers.find(c => c.id === d.customerId);
+        if (customer) {
+            return <CustomerInfo customer={customer} />;
+        }
+        return (
+            <div>
+                <p className="font-semibold">{d.customerName}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{d.customerRelationType} {d.customerRelationName}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Mob: {d.customerMobileNo}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{d.customerAddress}</p>
+            </div>
+        );
+    };
+
+    const handleExportPending = () => {
+        if (typeof (window as any).XLSX === 'undefined') {
+            alert("Export unavailable");
+            return;
+        }
+        const XLSX = (window as any).XLSX;
+        
+        const dataToExport = requested.map(d => {
+            const customer = customers.find(c => c.id === d.customerId);
+            return [
+                d.customerName, 
+                customer?.customerId || '', 
+                d.customerMobileNo, 
+                customer?.village || '', 
+                customer?.panchayat || '', 
+                customer?.agencyName || '', 
+                new Date(d.requestedAt).toLocaleDateString()
+            ];
+        });
+
+        const headers = ['Name', 'Customer ID', 'Mobile No', 'Village', 'Panchayat', 'Agency', 'Requested Date'];
+        const worksheetData = [headers, ...dataToExport];
+        
+        const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Pending_Deliveries");
+        XLSX.writeFile(wb, "Pending_Deliveries.xlsx");
+    };
+
+    const handlePrintPending = () => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            alert('Please allow popups for this website');
+            return;
+        }
+        
+        let tableHtml = `<table border="1" style="width:100%; border-collapse: collapse; font-family: sans-serif;">
+            <thead>
+                <tr style="background-color: #f2f2f2;">
+                    <th style="padding: 8px; text-align: left;">Name</th>
+                    <th style="padding: 8px; text-align: left;">Customer ID</th>
+                    <th style="padding: 8px; text-align: left;">Mobile No</th>
+                    <th style="padding: 8px; text-align: left;">Village</th>
+                    <th style="padding: 8px; text-align: left;">Agency</th>
+                    <th style="padding: 8px; text-align: left;">Requested Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${requested.map(d => {
+                    const customer = customers.find(c => c.id === d.customerId);
+                    return `
+                    <tr>
+                        <td style="padding: 8px;">${d.customerName}</td>
+                        <td style="padding: 8px;">${customer?.customerId || ''}</td>
+                        <td style="padding: 8px;">${d.customerMobileNo}</td>
+                        <td style="padding: 8px;">${customer?.village || ''}</td>
+                        <td style="padding: 8px;">${customer?.agencyName || ''}</td>
+                        <td style="padding: 8px;">${new Date(d.requestedAt).toLocaleDateString()}</td>
+                    </tr>
+                `}).join('')}
+            </tbody>
+        </table>`;
+        
+        printWindow.document.write(`
+            <html>
+                <head><title>Print Pending Deliveries</title></head>
+                <body>
+                    <h1>Pending Deliveries</h1>
+                    <p>Total: ${requested.length}</p>
+                    ${tableHtml}
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    };
 
     const requestedColumns: Column<Delivery>[] = [
         { header: t('deliveryPage.headers.customer'), accessor: customerInfoAccessor },
@@ -231,7 +315,9 @@ const DeliveryPage: React.FC = () => {
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">{t('deliveryPage.title')}</h2>
-                <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
+                    <Button onClick={handlePrintPending} variant="secondary">{t('customerListPage.print') || 'Print'}</Button>
+                    <Button onClick={handleExportPending} variant="secondary">{t('customerListPage.export') || 'Export'}</Button>
                     <input
                         type="text"
                         placeholder={t('deliveryPage.searchPlaceholder') || "Search deliveries..."}

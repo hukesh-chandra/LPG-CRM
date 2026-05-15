@@ -3,6 +3,9 @@ import { getCustomers, updateCustomer } from '../services/api';
 import { Customer } from '../types';
 import DataTable, { Column } from '../components/DataTable';
 import { useLanguage } from '../contexts/LanguageContext';
+import { CustomerInfo } from '../components/CustomerInfo';
+import Button from '../components/Button';
+import { PANCHAYAT_VILLAGE_MAP, PANCHAYATS, VILLAGES, AGENCIES } from '../constants';
 
 const BookingsPage: React.FC = () => {
     const { t, language } = useLanguage();
@@ -13,10 +16,86 @@ const BookingsPage: React.FC = () => {
     const [villageFilter, setVillageFilter] = useState<string>('all');
     const [panchayatFilter, setPanchayatFilter] = useState<string>('all');
     const [agencyFilter, setAgencyFilter] = useState<string>('all');
+    const [availableVillages, setAvailableVillages] = useState<string[]>([]);
+    
+    useEffect(() => {
+        if (panchayatFilter !== 'all' && panchayatFilter !== 'Other') {
+            setAvailableVillages(PANCHAYAT_VILLAGE_MAP[panchayatFilter as keyof typeof PANCHAYAT_VILLAGE_MAP] || []);
+        } else {
+            setAvailableVillages(VILLAGES);
+        }
+    }, [panchayatFilter]);
 
-    const uniqueVillages = useMemo(() => Array.from(new Set(customers.map(c => c.village === 'Other' ? c.otherVillage || 'Other' : c.village).filter(Boolean))), [customers]);
-    const uniquePanchayats = useMemo(() => Array.from(new Set(customers.map(c => c.panchayat === 'Other' ? c.otherPanchayat || 'Other' : c.panchayat).filter(Boolean))), [customers]);
-    const uniqueAgencies = useMemo(() => Array.from(new Set(customers.map(c => c.agencyName).filter(Boolean))), [customers]);
+    const handlePanchayatChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setPanchayatFilter(e.target.value);
+        setVillageFilter('all');
+    };
+
+    const handleExport = () => {
+        if (typeof (window as any).XLSX === 'undefined') {
+            alert("Export unavailable");
+            return;
+        }
+        const XLSX = (window as any).XLSX;
+        
+        const dataToExport = filteredCustomers.map(customer => {
+            return [customer.name, customer.customerId, customer.mobileNo, customer.village, customer.panchayat, customer.agencyName, customer.lastBookingDate ? new Date(customer.lastBookingDate).toLocaleDateString() : 'N/A'];
+        });
+
+        const headers = ['Name', 'Customer ID', 'Mobile No', 'Village', 'Panchayat', 'Agency', 'Last Booking Date'];
+        const worksheetData = [headers, ...dataToExport];
+        
+        const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Bookings");
+        XLSX.writeFile(wb, "Bookings_Data.xlsx");
+    };
+
+    const handlePrint = () => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            alert('Please allow popups for this website');
+            return;
+        }
+        
+        let tableHtml = `<table border="1" style="width:100%; border-collapse: collapse; font-family: sans-serif;">
+            <thead>
+                <tr style="background-color: #f2f2f2;">
+                    <th style="padding: 8px; text-align: left;">Name</th>
+                    <th style="padding: 8px; text-align: left;">Customer ID</th>
+                    <th style="padding: 8px; text-align: left;">Mobile No</th>
+                    <th style="padding: 8px; text-align: left;">Village</th>
+                    <th style="padding: 8px; text-align: left;">Agency</th>
+                    <th style="padding: 8px; text-align: left;">Last Booking Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filteredCustomers.map(c => `
+                    <tr>
+                        <td style="padding: 8px;">${c.name}</td>
+                        <td style="padding: 8px;">${c.customerId}</td>
+                        <td style="padding: 8px;">${c.mobileNo}</td>
+                        <td style="padding: 8px;">${c.village}</td>
+                        <td style="padding: 8px;">${c.agencyName || ''}</td>
+                        <td style="padding: 8px;">${c.lastBookingDate ? new Date(c.lastBookingDate).toLocaleDateString() : 'N/A'}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>`;
+        
+        printWindow.document.write(`
+            <html>
+                <head><title>Print Bookings</title></head>
+                <body>
+                    <h1>Bookings</h1>
+                    <p>Total: ${filteredCustomers.length}</p>
+                    ${tableHtml}
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -35,7 +114,7 @@ const BookingsPage: React.FC = () => {
     }, []);
 
     const getBookingCycleDays = (agencyName?: string) => {
-        if (agencyName === 'M/S VINDHYAWASHNI BHARAT GAS' || agencyName === 'BINDHYABASINI BHARAT GAS (BIHAR SHARIF)') return 25;
+        if (agencyName === 'BINDHYABASINI BHARAT GAS (BIHAR SHARIF)') return 25;
         return 45;
     };
 
@@ -100,8 +179,7 @@ const BookingsPage: React.FC = () => {
     }, [customers, filter, villageFilter, panchayatFilter, agencyFilter]);
 
     const columns: Column<Customer>[] = [
-        { header: t('bookingsPage.headers.name'), accessor: 'name' },
-        { header: t('bookingsPage.headers.customerId'), accessor: 'customerId' },
+        { header: t('bookingsPage.headers.name'), accessor: c => <CustomerInfo customer={c} /> },
         { 
             header: t('bookingsPage.headers.lastBookingDate'), 
             accessor: c => (
@@ -149,7 +227,13 @@ const BookingsPage: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">{t('bookingsPage.title')}</h2>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">{t('bookingsPage.title')}</h2>
+                <div className="flex items-center gap-2">
+                    <Button onClick={handlePrint} variant="secondary">{t('customerListPage.print') || 'Print'}</Button>
+                    <Button onClick={handleExport} variant="secondary">{t('customerListPage.export') || 'Export'}</Button>
+                </div>
+            </div>
             
             <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
                 <div className="flex items-center space-x-4">
@@ -189,19 +273,19 @@ const BookingsPage: React.FC = () => {
                         className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     >
                         <option value="all">{t('bookingsPage.filters.allVillages') || 'All Villages'}</option>
-                        {uniqueVillages.map(v => (
+                        {availableVillages.map(v => (
                             <option key={v} value={v}>{t(`enums.villages.${v}`)}</option>
                         ))}
                     </select>
 
                     <select
                         value={panchayatFilter}
-                        onChange={(e) => setPanchayatFilter(e.target.value)}
+                        onChange={handlePanchayatChange}
                         className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     >
                         <option value="all">{t('bookingsPage.filters.allPanchayats') || 'All Panchayats'}</option>
-                        {uniquePanchayats.map(p => (
-                            <option key={p} value={p}>{t(`enums.panchayats.${p}`)}</option>
+                        {PANCHAYATS.map(p => (
+                            <option key={p} value={p}>{p === 'Other' ? t('enums.other') : t(`enums.panchayats.${p}`)}</option>
                         ))}
                     </select>
 
@@ -211,7 +295,7 @@ const BookingsPage: React.FC = () => {
                         className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     >
                         <option value="all">{t('bookingsPage.filters.allAgencies') || 'All Agencies'}</option>
-                        {uniqueAgencies.map(a => (
+                        {AGENCIES.map(a => (
                             <option key={a} value={a}>{t(`enums.agencies.${a}`)}</option>
                         ))}
                     </select>

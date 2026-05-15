@@ -6,6 +6,7 @@ import Button from '../components/Button';
 import Modal from '../components/Modal';
 import { PANCHAYATS, VILLAGES, CONNECTION_TYPES, TEMPLATE_HEADERS, AGENCIES, PANCHAYAT_VILLAGE_MAP } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
+import { CustomerInfo } from '../components/CustomerInfo';
 
 const PRINTABLE_COLUMNS = [
     { key: 'name', header: 'Name' },
@@ -216,10 +217,7 @@ const CustomerListPage: React.FC = () => {
   }, [customers, searchTerm, filters]);
 
   const columns: Column<Customer>[] = [
-    { header: t('customerListPage.headers.name'), accessor: 'name' },
-    { header: t('customerListPage.headers.customerId'), accessor: 'customerId' },
-    { header: t('customerListPage.headers.mobileNo'), accessor: 'mobileNo' },
-    { header: t('customerListPage.headers.village'), accessor: (c) => c.village === 'Other' ? c.otherVillage : t(`enums.villages.${c.village}`) },
+    { header: t('customerListPage.headers.name'), accessor: (c) => <CustomerInfo customer={c} /> },
     { header: t('customerListPage.headers.agency'), accessor: (c) => c.agencyName ? t(`enums.agencies.${c.agencyName}`) : '' },
     { header: t('customerListPage.headers.connectionType'), accessor: (c) => t(`enums.connectionType.${c.connectionType}` as any) },
     { header: t('addCustomerPage.form.kyc'), accessor: (c) => c.kyc ? t('customerListPage.kycCompleted') : t('customerListPage.kycPending') },

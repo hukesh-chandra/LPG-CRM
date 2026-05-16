@@ -73,7 +73,17 @@ const CustomerListPage: React.FC = () => {
     connectionType: '',
     agencyName: '',
   });
-  const [availableVillages, setAvailableVillages] = useState<string[]>(VILLAGES);
+  const uniquePanchayats = useMemo(() => Array.from(new Set(customers.map(c => c.panchayat === 'Other' ? c.otherPanchayat || 'Other' : c.panchayat).filter(Boolean))), [customers]);
+  const uniqueVillages = useMemo(() => {
+    let filtered = customers;
+    if (filters.panchayat) {
+        filtered = customers.filter(c => (c.panchayat === 'Other' ? c.otherPanchayat || 'Other' : c.panchayat) === filters.panchayat);
+    }
+    return Array.from(new Set(filtered.map(c => c.village === 'Other' ? c.otherVillage || 'Other' : c.village).filter(Boolean)));
+  }, [customers, filters.panchayat]);
+  const uniqueAgencies = useMemo(() => Array.from(new Set(customers.map(c => c.agencyName).filter(Boolean))), [customers]);
+  const uniqueConnectionTypes = useMemo(() => Array.from(new Set(customers.map(c => c.connectionType).filter(Boolean))), [customers]);
+
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -90,14 +100,6 @@ const CustomerListPage: React.FC = () => {
     };
     fetchCustomers();
   }, []);
-
-  useEffect(() => {
-    if (filters.panchayat) {
-        setAvailableVillages(PANCHAYAT_VILLAGE_MAP[filters.panchayat as keyof typeof PANCHAYAT_VILLAGE_MAP] || []);
-    } else {
-        setAvailableVillages(VILLAGES);
-    }
-  }, [filters.panchayat]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -277,19 +279,19 @@ const CustomerListPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <select name="panchayat" value={filters.panchayat} onChange={handleFilterChange} className="w-full px-4 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <option value="">{t('customerListPage.all')}</option>
-                {PANCHAYATS.map(p => <option key={p} value={p}>{p === 'Other' ? t('enums.other') : t(`enums.panchayats.${p}`)}</option>)}
+                {uniquePanchayats.map(p => <option key={p} value={p}>{p === 'Other' ? t('enums.other') : (t(`enums.panchayats.${p}`) || p)}</option>)}
             </select>
             <select name="village" value={filters.village} onChange={handleFilterChange} className="w-full px-4 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <option value="">{t('customerListPage.allVillages')}</option>
-                {availableVillages.map(v => <option key={v} value={v}>{t(`enums.villages.${v}`)}</option>)}
+                {uniqueVillages.map(v => <option key={v} value={v}>{t(`enums.villages.${v}`) || v}</option>)}
             </select>
              <select name="agencyName" value={filters.agencyName} onChange={handleFilterChange} className="w-full px-4 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <option value="">{t('customerListPage.allAgencies')}</option>
-                {AGENCIES.map(a => <option key={a} value={a}>{t(`enums.agencies.${a}`)}</option>)}
+                {uniqueAgencies.map(a => <option key={a} value={a}>{t(`enums.agencies.${a}`) || a}</option>)}
             </select>
             <select name="connectionType" value={filters.connectionType} onChange={handleFilterChange} className="w-full px-4 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <option value="">{t('customerListPage.allConnectionTypes')}</option>
-                {CONNECTION_TYPES.map(ct => <option key={ct} value={ct}>{t(`enums.connectionType.${ct}` as any)}</option>)}
+                {uniqueConnectionTypes.map(ct => <option key={ct} value={ct}>{t(`enums.connectionType.${ct}` as any) || ct}</option>)}
             </select>
         </div>
       </div>

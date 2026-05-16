@@ -321,7 +321,7 @@ const ExcelImport: React.FC = () => {
                 const agencyName = getVal(colIndices.agencyName);
                 const dueDate = getVal(colIndices.dueDate);
                 const kycRaw = getVal(colIndices.kyc);
-                const kyc = /^(yes|y|true|completed|1)$/i.test(kycRaw);
+                const kyc = /^(yes|y|true|completed|1|ok)$/i.test((kycRaw || '').trim());
 
                 // Skip empty rows or rows with "a lot" of missing data
                 // We define "a lot" as missing BOTH Name and Consumer No.

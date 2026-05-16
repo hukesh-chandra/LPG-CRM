@@ -16,16 +16,18 @@ const BookingsPage: React.FC = () => {
     const [villageFilter, setVillageFilter] = useState<string>('all');
     const [panchayatFilter, setPanchayatFilter] = useState<string>('all');
     const [agencyFilter, setAgencyFilter] = useState<string>('all');
-    const [availableVillages, setAvailableVillages] = useState<string[]>([]);
-    
-    useEffect(() => {
-        if (panchayatFilter !== 'all' && panchayatFilter !== 'Other') {
-            setAvailableVillages(PANCHAYAT_VILLAGE_MAP[panchayatFilter as keyof typeof PANCHAYAT_VILLAGE_MAP] || []);
-        } else {
-            setAvailableVillages(VILLAGES);
-        }
-    }, [panchayatFilter]);
+    const [searchTerm, setSearchTerm] = useState('');
 
+    const uniquePanchayats = useMemo(() => Array.from(new Set(customers.map(c => c.panchayat === 'Other' ? c.otherPanchayat || 'Other' : c.panchayat).filter(Boolean))), [customers]);
+    const uniqueVillages = useMemo(() => {
+        let filtered = customers;
+        if (panchayatFilter !== 'all') {
+            filtered = customers.filter(c => (c.panchayat === 'Other' ? c.otherPanchayat || 'Other' : c.panchayat) === panchayatFilter);
+        }
+        return Array.from(new Set(filtered.map(c => c.village === 'Other' ? c.otherVillage || 'Other' : c.village).filter(Boolean)));
+    }, [customers, panchayatFilter]);
+    const uniqueAgencies = useMemo(() => Array.from(new Set(customers.map(c => c.agencyName).filter(Boolean))), [customers]);
+    
     const handlePanchayatChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setPanchayatFilter(e.target.value);
         setVillageFilter('all');
@@ -66,12 +68,13 @@ const BookingsPage: React.FC = () => {
                 villageName,
                 customer.customerId, 
                 customer.consumerNo,
+                customer.kyc ? t('customerListPage.kycCompleted') : t('customerListPage.kycPending'),
                 formatDate(customer.lastBookingDate),
                 nextBookingDate
             ];
         });
 
-        const headers = ['Name', 'Relation Name', 'Mobile No', 'Village', 'Customer ID', 'Consumer No', 'Last Booking Date', 'Next Booking Date'];
+        const headers = ['Name', 'Relation Name', 'Mobile No', 'Village', 'Customer ID', 'Consumer No', 'KYC', 'Last Booking Date', 'Next Booking Date'];
         const worksheetData = [headers, ...dataToExport];
         
         const ws = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -96,6 +99,7 @@ const BookingsPage: React.FC = () => {
                     <th style="padding: 8px; text-align: left;">Village</th>
                     <th style="padding: 8px; text-align: left;">Customer ID</th>
                     <th style="padding: 8px; text-align: left;">Consumer No</th>
+                    <th style="padding: 8px; text-align: left;">KYC</th>
                     <th style="padding: 8px; text-align: left;">Last Booking Date</th>
                     <th style="padding: 8px; text-align: left;">Next Booking Date</th>
                 </tr>
@@ -104,6 +108,7 @@ const BookingsPage: React.FC = () => {
                 ${filteredCustomers.map(c => {
                     const relation = `${c.relationType || ''} ${c.relationName || ''}`.trim();
                     const villageName = c.village === 'Other' ? c.otherVillage : t(`enums.villages.${c.village}`);
+                    const kycStatus = c.kyc ? t('customerListPage.kycCompleted') : t('customerListPage.kycPending');
                     let nextBookingDate = 'N/A';
                     if (c.lastBookingDate) {
                         const next = new Date(c.lastBookingDate);
@@ -118,6 +123,7 @@ const BookingsPage: React.FC = () => {
                         <td style="padding: 8px;">${villageName}</td>
                         <td style="padding: 8px;">${c.customerId}</td>
                         <td style="padding: 8px;">${c.consumerNo || ''}</td>
+                        <td style="padding: 8px;">${kycStatus}</td>
                         <td style="padding: 8px;">${formatDate(c.lastBookingDate)}</td>
                         <td style="padding: 8px;">${nextBookingDate}</td>
                     </tr>
@@ -230,7 +236,15 @@ const BookingsPage: React.FC = () => {
 
     const filteredCustomers = useMemo(() => {
         const now = new Date().getTime();
+        const searchLower = searchTerm.toLowerCase();
+        
         return customers.filter(c => {
+            const matchesSearch = c.name.toLowerCase().includes(searchLower) ||
+                                 c.customerId.toLowerCase().includes(searchLower) ||
+                                 c.mobileNo.includes(searchTerm) ||
+                                 (c.consumerNo && c.consumerNo.toLowerCase().includes(searchLower));
+            if (searchTerm && !matchesSearch) return false;
+
             const cycleDays = getBookingCycleDays(c.agencyName);
             const isUnbooked = !c.lastBookingDate || (now - new Date(c.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= cycleDays;
             
@@ -247,10 +261,11 @@ const BookingsPage: React.FC = () => {
 
             return true;
         });
-    }, [customers, filter, villageFilter, panchayatFilter, agencyFilter]);
+    }, [customers, filter, villageFilter, panchayatFilter, agencyFilter, searchTerm]);
 
     const columns: Column<Customer>[] = [
         { header: t('bookingsPage.headers.name'), accessor: c => <CustomerInfo customer={c} /> },
+        { header: t('addCustomerPage.form.kyc'), accessor: (c) => c.kyc ? t('customerListPage.kycCompleted') : t('customerListPage.kycPending') },
         { 
             header: t('bookingsPage.headers.lastBookingDate'), 
             accessor: c => (
@@ -308,6 +323,15 @@ const BookingsPage: React.FC = () => {
             
             <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
                 <div className="flex items-center space-x-4">
+                    <input
+                        type="text"
+                        placeholder={t('deliveryPage.searchPlaceholder') || "Search..."}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100"
+                    />
+                </div>
+                <div className="flex items-center space-x-4">
                     <label className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
                         <input 
                             type="radio" 
@@ -344,8 +368,8 @@ const BookingsPage: React.FC = () => {
                         className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     >
                         <option value="all">{t('bookingsPage.filters.allVillages') || 'All Villages'}</option>
-                        {availableVillages.map(v => (
-                            <option key={v} value={v}>{t(`enums.villages.${v}`)}</option>
+                        {uniqueVillages.map(v => (
+                            <option key={v} value={v}>{t(`enums.villages.${v}`) || v}</option>
                         ))}
                     </select>
 
@@ -355,8 +379,8 @@ const BookingsPage: React.FC = () => {
                         className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     >
                         <option value="all">{t('bookingsPage.filters.allPanchayats') || 'All Panchayats'}</option>
-                        {PANCHAYATS.map(p => (
-                            <option key={p} value={p}>{p === 'Other' ? t('enums.other') : t(`enums.panchayats.${p}`)}</option>
+                        {uniquePanchayats.map(p => (
+                            <option key={p} value={p}>{p === 'Other' ? t('enums.other') : (t(`enums.panchayats.${p}`) || p)}</option>
                         ))}
                     </select>
 
@@ -366,8 +390,8 @@ const BookingsPage: React.FC = () => {
                         className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     >
                         <option value="all">{t('bookingsPage.filters.allAgencies') || 'All Agencies'}</option>
-                        {AGENCIES.map(a => (
-                            <option key={a} value={a}>{t(`enums.agencies.${a}`)}</option>
+                        {uniqueAgencies.map(a => (
+                            <option key={a} value={a}>{t(`enums.agencies.${a}`) || a}</option>
                         ))}
                     </select>
                 </div>

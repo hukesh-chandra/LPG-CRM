@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getCustomerById, getTransactionsByCustomerId, addTransaction, updateTransaction, uploadCustomerDocument, updateCustomer, getDocumentsByCustomerId } from '../services/api';
-import { Customer, Transaction, NewTransaction, UpdateTransactionPayload, TransactionHistory, ConnectionType, RelationType, CustomerDocument, DocumentType } from '../types';
+import { Customer, Transaction, NewTransaction, TransactionHistory, CustomerDocument, DocumentType } from '../types';
 import { GAS_COMPANIES, PANCHAYATS, PANCHAYAT_VILLAGE_MAP, CONNECTION_TYPES, AGENCIES, RELATION_TYPES } from '../constants';
 import DataTable, { Column } from '../components/DataTable';
 import Button from '../components/Button';

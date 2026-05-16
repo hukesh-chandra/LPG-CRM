@@ -5,7 +5,6 @@ import DataTable, { Column } from '../components/DataTable';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CustomerInfo } from '../components/CustomerInfo';
 import Button from '../components/Button';
-import { PANCHAYAT_VILLAGE_MAP, PANCHAYATS, VILLAGES, AGENCIES } from '../constants';
 
 const BookingsPage: React.FC = () => {
     const { t, language } = useLanguage();

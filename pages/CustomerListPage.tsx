@@ -4,7 +4,7 @@ import { Customer } from '../types';
 import DataTable, { Column } from '../components/DataTable';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
-import { PANCHAYATS, VILLAGES, CONNECTION_TYPES, TEMPLATE_HEADERS, AGENCIES, PANCHAYAT_VILLAGE_MAP } from '../constants';
+import { TEMPLATE_HEADERS } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CustomerInfo } from '../components/CustomerInfo';
 

@@ -5,7 +5,7 @@ import Select from '../components/Select';
 import Button from '../components/Button';
 import { addCustomer, upsertCustomersBulk, getCustomers } from '../services/api';
 import { NewCustomer, ConnectionType, Customer, RelationType } from '../types';
-import { PANCHAYATS, VILLAGES, CONNECTION_TYPES, TEMPLATE_HEADERS, AGENCIES, PANCHAYAT_VILLAGE_MAP, RELATION_TYPES } from '../constants';
+import { PANCHAYATS, CONNECTION_TYPES, TEMPLATE_HEADERS, AGENCIES, PANCHAYAT_VILLAGE_MAP, RELATION_TYPES } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
 
 type FormErrors = Partial<Record<keyof NewCustomer, string>>;
@@ -289,7 +289,7 @@ const ExcelImport: React.FC = () => {
             const customersToCreate: NewCustomer[] = [];
             const customersToUpdate: (NewCustomer & { existingId?: string })[] = [];
             const invalidRows: any[] = [];
-            const existingConsumerMap = new Map(
+            const existingConsumerMap = new Map<string, string>(
                 existingCustomers.filter(c => c.consumerNo).map(c => [String(c.consumerNo).trim(), c.id])
             );
 

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { DashboardIcon, UsersIcon, UserPlusIcon, GasCylinderIcon, ShieldCheckIcon, TruckIcon, XMarkIcon, ClockIcon } from './icons/Icons';
+import { DashboardIcon, UsersIcon, GasCylinderIcon, ShieldCheckIcon, TruckIcon, XMarkIcon, ClockIcon } from './icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Route } from '../App';
 

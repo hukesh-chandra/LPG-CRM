@@ -3,11 +3,10 @@ import { getDashboardStats, getCustomers, addTransaction } from '../services/api
 import Card from '../components/Card';
 import DataTable, { Column } from '../components/DataTable';
 import { Transaction, Customer } from '../types';
-import { UsersIcon, CurrencyDollarIcon, ArrowPathIcon, TruckIcon, ShieldCheckIcon, ClockIcon } from '../components/icons/Icons';
+import { UsersIcon, CurrencyDollarIcon, TruckIcon, ShieldCheckIcon, ClockIcon } from '../components/icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import Select from '../components/Select';
 import { CustomerInfo } from '../components/CustomerInfo';
 
 import { GAS_COMPANIES } from '../constants';
@@ -93,7 +92,6 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
                 const isUnbooked = !selectedCustomer.lastBookingDate || (new Date().getTime() - new Date(selectedCustomer.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= 45;
                 if (isUnbooked) {
                     if (window.confirm(t('dashboard.quickSell.unbookedAlert'))) {
-                        // We will add `updateCustomer` import and call it
                         await import('../services/api').then(api => api.updateCustomer(selectedCustomer.id, { lastBookingDate: new Date().toISOString() }));
                     }
                 }

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
@@ -46,18 +46,7 @@ const parseRoute = (hash: string): Route => {
     }
 };
 
-const routeToPath = (route: Route): string => {
-    switch (route.name) {
-        case 'dashboard': return '#/';
-        case 'customers': return '#/customers';
-        case 'add-customer': return '#/add-customer';
-        case 'deliveries': return '#/deliveries';
-        case 'bookings': return '#/bookings';
-        case 'admin': return '#/admin';
-        case 'customer-detail': return `#/customers/${route.id}`;
-        default: return '#/';
-    }
-};
+
 
 const AppContent: React.FC = () => {
     useDarkMode();

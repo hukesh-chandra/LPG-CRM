@@ -325,7 +325,7 @@ export const permanentlyDeleteCustomer = async (customerId: string): Promise<voi
 };
 
 
-export const upsertCustomersBulk = async (customerData: NewCustomer[]): Promise<{ created: number; updated: number }> => {
+export const upsertCustomersBulk = async (customerData: (NewCustomer & { existingId?: string })[]): Promise<{ created: number; updated: number }> => {
     let created = 0;
     let updated = 0;
     const BATCH_SIZE = 450; // Firestore limit is 500, keeping a buffer
@@ -348,22 +348,26 @@ export const upsertCustomersBulk = async (customerData: NewCustomer[]): Promise<
         let operationsInBatch = 0;
 
         for (const newcomer of chunk) {
-            let existingDoc;
-            if (newcomer.consumerNo && newcomer.consumerNo.trim() !== '') {
+            let existingId = newcomer.existingId;
+            
+            // Fallback for cases where existingId isn't provided but consumerNo is present
+            if (!existingId && newcomer.consumerNo && newcomer.consumerNo.trim() !== '') {
                 const query = await customersCollection.where('consumerNo', '==', newcomer.consumerNo).limit(1).get();
                 if (!query.empty) {
-                    existingDoc = query.docs[0];
+                    existingId = query.docs[0].id;
                 }
             }
-            
-            const cleanData = sanitize(newcomer);
 
-            if (existingDoc) {
-                batch.update(existingDoc.ref, cleanData);
+            const { existingId: _, ...dataToSave } = newcomer;
+            const cleanData = sanitize(dataToSave);
+
+            if (existingId) {
+                const existingRef = customersCollection.doc(existingId);
+                batch.update(existingRef, cleanData);
                 updated++;
             } else {
                 const newDocRef = customersCollection.doc();
-                batch.set(newDocRef, { ...cleanData, balance: newcomer.balance || 0, isDeleted: false });
+                batch.set(newDocRef, { ...cleanData, balance: dataToSave.balance || 0, isDeleted: false });
                 created++;
             }
             operationsInBatch++;

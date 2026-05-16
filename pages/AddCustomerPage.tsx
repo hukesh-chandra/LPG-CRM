@@ -195,7 +195,7 @@ const ManualEntryForm: React.FC = () => {
 const ExcelImport: React.FC = () => {
     const { t } = useLanguage();
     const [file, setFile] = useState<File | null>(null);
-    const [parsedData, setParsedData] = useState<{toCreate: NewCustomer[], toUpdate: NewCustomer[], invalid: any[]}>({toCreate: [], toUpdate: [], invalid: []});
+    const [parsedData, setParsedData] = useState<{toCreate: NewCustomer[], toUpdate: (NewCustomer & { existingId?: string })[], invalid: any[]}>({toCreate: [], toUpdate: [], invalid: []});
     const [isProcessing, setIsProcessing] = useState(false);
     const [existingCustomers, setExistingCustomers] = useState<Customer[]>([]);
 
@@ -254,7 +254,7 @@ const ExcelImport: React.FC = () => {
                 connectionType: findColIndex([/^connection\s*type$/i, /^connection$/i]),
                 agencyName: findColIndex([/^agency\s*name$/i, /^agency$/i]),
                 dueDate: findColIndex([/^due\s*date$/i]),
-                kyc: findColIndex([/^kyc$/i]),
+                kyc: findColIndex([/kyc/i]),
             };
 
             // Handle "Other" columns based on proximity to Village/Panchayat
@@ -287,9 +287,11 @@ const ExcelImport: React.FC = () => {
 
             const rows = json.slice(1);
             const customersToCreate: NewCustomer[] = [];
-            const customersToUpdate: NewCustomer[] = [];
+            const customersToUpdate: (NewCustomer & { existingId?: string })[] = [];
             const invalidRows: any[] = [];
-            const existingConsumerNos = new Set(existingCustomers.map(c => c.consumerNo).filter(Boolean));
+            const existingConsumerMap = new Map(
+                existingCustomers.filter(c => c.consumerNo).map(c => [String(c.consumerNo).trim(), c.id])
+            );
 
             rows.forEach((row, index) => {
                 // Helper to safely get value
@@ -321,7 +323,8 @@ const ExcelImport: React.FC = () => {
                 const agencyName = getVal(colIndices.agencyName);
                 const dueDate = getVal(colIndices.dueDate);
                 const kycRaw = getVal(colIndices.kyc);
-                const kyc = /^(yes|y|true|completed|1|ok)$/i.test((kycRaw || '').trim());
+                const kycStr = (kycRaw || '').trim().toLowerCase();
+                const kyc = ['yes', 'y', 'true', 'completed', '1', 'ok', 'done', 'yes kyc', 'kyc ok'].includes(kycStr) || kycStr.includes('ok') || kycStr.includes('yes') || kycStr === 'done';
 
                 // Skip empty rows or rows with "a lot" of missing data
                 // We define "a lot" as missing BOTH Name and Consumer No.
@@ -374,8 +377,11 @@ const ExcelImport: React.FC = () => {
                 if (errors.length > 0) {
                     invalidRows.push({ ...customerData, rowNum: index + 2, errors: errors.join(' ') });
                 } else {
-                    if (customerData.consumerNo && existingConsumerNos.has(customerData.consumerNo)) {
-                        customersToUpdate.push(customerData);
+                    const consumerNoKey = customerData.consumerNo ? String(customerData.consumerNo).trim() : null;
+                    const existingId = consumerNoKey ? existingConsumerMap.get(consumerNoKey) : undefined;
+                    
+                    if (existingId) {
+                        customersToUpdate.push({ ...customerData, existingId });
                     } else {
                         customersToCreate.push(customerData);
                     }
@@ -457,9 +463,12 @@ const ExcelImport: React.FC = () => {
                                         <th className="p-2 text-left">{t('addCustomerPage.import.headers.errors')}</th>
                                     </tr></thead>
                                     <tbody className="divide-y divide-red-200 dark:divide-red-800">
-                                        {parsedData.invalid.map(row => (<tr key={row.rowNum}>
+                                        {parsedData.invalid.slice(0, 50).map(row => (<tr key={row.rowNum}>
                                             <td className="p-2">{row.rowNum}</td><td className="p-2">{row.name}</td><td className="p-2 text-red-500">{row.errors}</td>
                                         </tr>))}
+                                        {parsedData.invalid.length > 50 && (
+                                            <tr><td colSpan={3} className="p-2 text-center text-gray-500">...and {parsedData.invalid.length - 50} more</td></tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -470,21 +479,25 @@ const ExcelImport: React.FC = () => {
                             <h4 className="font-semibold text-gray-800 dark:text-gray-200">
                                 <span className="text-green-600">{t('addCustomerPage.import.readyToCreate', parsedData.toCreate.length)}</span> / <span className="text-blue-600">{t('addCustomerPage.import.readyToUpdate', parsedData.toUpdate.length)}</span>
                             </h4>
-                            <div className="mt-2 max-h-60 overflow-y-auto border border-gray-300 rounded-lg">
+                            <div className="mt-2 max-h-60 overflow-y-auto border border-gray-300 rounded-lg bg-white dark:bg-gray-800">
                                 <table className="min-w-full text-sm">
                                     <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0"><tr>
                                         <th className="p-2 text-left">{t('addCustomerPage.import.headers.action')}</th>
                                         <th className="p-2 text-left">{t('addCustomerPage.import.headers.name')}</th>
                                         <th className="p-2 text-left">{t('addCustomerPage.import.headers.consumerNo')}</th>
                                         <th className="p-2 text-left">{t('addCustomerPage.import.headers.mobileNo')}</th>
+                                        <th className="p-2 text-left">{t('addCustomerPage.form.kyc')}</th>
                                     </tr></thead>
                                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                        {parsedData.toUpdate.map((row, i) => (<tr key={`u-${i}`} className="bg-blue-50 dark:bg-blue-900/20">
-                                            <td className="p-2 font-semibold text-blue-600">{t('addCustomerPage.import.actionUpdate')}</td><td className="p-2">{row.name}</td><td className="p-2">{row.consumerNo}</td><td className="p-2">{row.mobileNo}</td>
+                                        {parsedData.toUpdate.slice(0, 50).map((row, i) => (<tr key={`u-${i}`} className="bg-blue-50 dark:bg-blue-900/20">
+                                            <td className="p-2 font-semibold text-blue-600">{t('addCustomerPage.import.actionUpdate')}</td><td className="p-2">{row.name}</td><td className="p-2">{row.consumerNo}</td><td className="p-2">{row.mobileNo}</td><td className="p-2">{row.kyc ? 'Completed' : 'Pending'}</td>
                                         </tr>))}
-                                        {parsedData.toCreate.map((row, i) => (<tr key={`c-${i}`} className="bg-green-50 dark:bg-green-900/20">
-                                            <td className="p-2 font-semibold text-green-600">{t('addCustomerPage.import.actionCreate')}</td><td className="p-2">{row.name}</td><td className="p-2">{row.consumerNo}</td><td className="p-2">{row.mobileNo}</td>
+                                        {parsedData.toCreate.slice(0, 50 - Math.min(50, parsedData.toUpdate.length)).map((row, i) => (<tr key={`c-${i}`} className="bg-green-50 dark:bg-green-900/20">
+                                            <td className="p-2 font-semibold text-green-600">{t('addCustomerPage.import.actionCreate')}</td><td className="p-2">{row.name}</td><td className="p-2">{row.consumerNo}</td><td className="p-2">{row.mobileNo}</td><td className="p-2">{row.kyc ? 'Completed' : 'Pending'}</td>
                                         </tr>))}
+                                        {(parsedData.toUpdate.length + parsedData.toCreate.length) > 50 && (
+                                            <tr><td colSpan={5} className="p-2 text-center text-gray-500">...and {(parsedData.toUpdate.length + parsedData.toCreate.length) - 50} more</td></tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </div>

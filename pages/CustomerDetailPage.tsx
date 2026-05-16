@@ -335,6 +335,8 @@ const ViewHistoryModal: React.FC<{ transaction: Transaction, onClose: () => void
     );
 };
 
+import imageCompression from 'browser-image-compression';
+
 const DocumentUploader: React.FC<{
     label: string;
     document?: CustomerDocument;
@@ -351,7 +353,20 @@ const DocumentUploader: React.FC<{
 
     const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
+            let file = e.target.files[0];
+
+            if (file.type.startsWith('image/')) {
+                try {
+                    const options = {
+                        maxSizeMB: 1,
+                        maxWidthOrHeight: 1920,
+                        useWebWorker: true,
+                    };
+                    file = await imageCompression(file, options) as File;
+                } catch (compressionError) {
+                    console.warn("Image compression failed, using original file", compressionError);
+                }
+            }
 
             if (file.size > MAX_SIZE_BYTES) {
                 alert(t('customerDetailPage.documents.sizeError', 5));

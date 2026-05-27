@@ -21,6 +21,7 @@ const ManualEntryForm: React.FC = () => {
         otherPanchayat: '',
         otherVillage: '',
         dueDate: '',
+        remark: '',
     });
     const [errors, setErrors] = useState<FormErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,7 +90,7 @@ const ManualEntryForm: React.FC = () => {
             'name', 'customerId', 'consumerNo', 'lpgId', 'relationType', 'relationName', 'mobileNo',
             'panchayat', formData.panchayat === 'Other' ? 'otherPanchayat' : null,
             'village', formData.village === 'Other' ? 'otherVillage' : null,
-            'agencyName', 'svNo', 'aadhaarNo', 'connectionType', 'dueDate'
+            'agencyName', 'svNo', 'aadhaarNo', 'connectionType', 'dueDate', 'remark'
         ].filter(Boolean) as string[];
 
         const currentIndex = fieldOrder.indexOf(currentField);
@@ -170,6 +171,7 @@ const ManualEntryForm: React.FC = () => {
                 </Select>
                 {/* Fix: Changed ref callback to not return a value. */}
                 <Input ref={el => { formRefs.current['dueDate'] = el; }} onKeyDown={e => handleKeyDown(e, getNextField('dueDate'))} label={t('addCustomerPage.form.dueDate')} name="dueDate" type="date" value={formData.dueDate || ''} onChange={handleChange} />
+                <Input ref={el => { formRefs.current['remark'] = el; }} onKeyDown={e => handleKeyDown(e, getNextField('remark'))} label={t('addCustomerPage.form.remark')} name="remark" value={formData.remark || ''} onChange={handleChange} />
                 
                 <div className="flex items-center space-x-2 mt-4">
                     <input
@@ -254,6 +256,7 @@ const ExcelImport: React.FC = () => {
                 connectionType: findColIndex([/^connection\s*type$/i, /^connection$/i]),
                 agencyName: findColIndex([/^agency\s*name$/i, /^agency$/i]),
                 dueDate: findColIndex([/^due\s*date$/i]),
+                remark: findColIndex([/^remark(s)?$/i]),
                 kyc: findColIndex([/kyc/i]),
             };
 
@@ -322,6 +325,7 @@ const ExcelImport: React.FC = () => {
                 const connectionType = getVal(colIndices.connectionType);
                 const agencyName = getVal(colIndices.agencyName);
                 const dueDate = getVal(colIndices.dueDate);
+                const remark = getVal(colIndices.remark);
                 const kycRaw = getVal(colIndices.kyc);
                 const kycStr = (kycRaw || '').trim().toLowerCase();
                 const kyc = ['yes', 'y', 'true', 'completed', '1', 'ok', 'done', 'yes kyc', 'kyc ok'].includes(kycStr) || kycStr.includes('ok') || kycStr.includes('yes') || kycStr === 'done';
@@ -371,6 +375,7 @@ const ExcelImport: React.FC = () => {
                     balance: 0,
                     agencyName: agencyName || '',
                     dueDate: dueDate || undefined,
+                    remark: remark || '',
                     kyc: kyc,
                 };
                 

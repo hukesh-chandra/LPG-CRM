@@ -29,6 +29,7 @@ export interface Customer {
   agencyName?: string;
   kyc?: boolean;
   lastBookingDate?: string | null;
+  remark?: string;
 }
 
 export type DocumentType = 'aadhaarCard' | 'bankPassbook' | 'consumerCard' | 'svDocument';

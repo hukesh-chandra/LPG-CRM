@@ -125,7 +125,7 @@ const CustomerListPage: React.FC = () => {
         customer.village, customer.otherVillage || '',
         customer.panchayat, customer.otherPanchayat || '',
         customer.svNo, customer.aadhaarNo, customer.connectionType, customer.agencyName || '',
-        customer.dueDate || '', customer.kyc ? t('customerListPage.kycCompleted') : t('customerListPage.kycPending')
+        customer.dueDate || '', customer.remark || '', customer.kyc ? t('customerListPage.kycCompleted') : t('customerListPage.kycPending')
     ]);
 
     const worksheetData = [[...TEMPLATE_HEADERS], ...dataToExport];

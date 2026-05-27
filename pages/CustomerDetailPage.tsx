@@ -41,6 +41,7 @@ const CustomerInfo: React.FC<{ customer: Customer }> = ({ customer }) => {
         { label: t('addCustomerPage.form.kyc'), value: customer.kyc ? t('customerListPage.kycCompleted') : t('customerListPage.kycPending') },
         { label: t('addCustomerPage.form.connectionType'), value: t(`enums.connectionType.${customer.connectionType}` as any) },
         { label: t('addCustomerPage.form.dueDate'), value: customer.dueDate ? new Date(customer.dueDate).toLocaleDateString(locale) : 'N/A' },
+        { label: t('addCustomerPage.form.remark'), value: customer.remark || 'N/A' },
         { label: t('customerDetailPage.bookingStatus'), value: bookingStatusText },
     ];
 
@@ -113,7 +114,7 @@ const CustomerEditForm: React.FC<{ customer: Customer; onSave: () => void; onCan
             'name', 'customerId', 'consumerNo', 'lpgId', 'relationType', 'relationName', 'mobileNo',
             'panchayat', formData.panchayat === 'Other' ? 'otherPanchayat' : null,
             'village', formData.village === 'Other' ? 'otherVillage' : null,
-            'agencyName', 'svNo', 'aadhaarNo', 'connectionType', 'dueDate'
+            'agencyName', 'svNo', 'aadhaarNo', 'connectionType', 'dueDate', 'remark'
         ].filter(Boolean) as string[];
 
         const currentIndex = fieldOrder.indexOf(currentField);
@@ -186,6 +187,7 @@ const CustomerEditForm: React.FC<{ customer: Customer; onSave: () => void; onCan
                 </Select>
                 {/* Fix: Changed ref callback to not return a value. */}
                 <Input ref={el => { formRefs.current['dueDate'] = el; }} onKeyDown={e => handleKeyDown(e, getNextField('dueDate'))} label={t('addCustomerPage.form.dueDate')} name="dueDate" type="date" value={formData.dueDate || ''} onChange={handleChange} />
+                <Input ref={el => { formRefs.current['remark'] = el; }} onKeyDown={e => handleKeyDown(e, getNextField('remark'))} label={t('addCustomerPage.form.remark')} name="remark" value={formData.remark || ''} onChange={handleChange} />
                 
                 <div className="flex items-center space-x-2 mt-4">
                     <input

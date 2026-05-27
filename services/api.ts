@@ -51,6 +51,7 @@ const customerFromDoc = (doc: any): Customer => {
         agencyName: data.agencyName || '',
         kyc: data.kyc || false,
         lastBookingDate: data.lastBookingDate || null,
+        remark: data.remark || '',
     };
 };
 

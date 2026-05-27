@@ -128,6 +128,7 @@ export const translations = {
             connectionType: 'Connection Type',
             dueDate: 'Due Date',
             kyc: 'KYC',
+            remark: 'Remark',
             kycCompleted: 'Completed',
             kycPending: 'Pending',
         },
@@ -529,6 +530,7 @@ export const translations = {
             connectionType: 'कनेक्शन प्रकार',
             dueDate: 'देय तिथि',
             kyc: 'केवाईसी पूरा हुआ',
+            remark: 'टिप्पणी',
         },
         errors: {
             nameRequired: 'नाम आवश्यक है।',

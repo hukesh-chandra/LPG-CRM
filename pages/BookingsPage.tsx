@@ -15,6 +15,7 @@ const BookingsPage: React.FC = () => {
     const [villageFilter, setVillageFilter] = useState<string>('all');
     const [panchayatFilter, setPanchayatFilter] = useState<string>('all');
     const [agencyFilter, setAgencyFilter] = useState<string>('all');
+    const [kycFilter, setKycFilter] = useState<'all' | 'completed' | 'pending'>('all');
     const [searchTerm, setSearchTerm] = useState('');
 
     const uniquePanchayats = useMemo(() => Array.from(new Set(customers.map(c => c.panchayat === 'Other' ? c.otherPanchayat || 'Other' : c.panchayat).filter(Boolean))), [customers]);
@@ -257,10 +258,14 @@ const BookingsPage: React.FC = () => {
             if (panchayatFilter !== 'all' && cPanchayat !== panchayatFilter) return false;
 
             if (agencyFilter !== 'all' && c.agencyName !== agencyFilter) return false;
+            if (kycFilter !== 'all') {
+                if (kycFilter === 'completed' && !c.kyc) return false;
+                if (kycFilter === 'pending' && c.kyc) return false;
+            }
 
             return true;
         });
-    }, [customers, filter, villageFilter, panchayatFilter, agencyFilter, searchTerm]);
+    }, [customers, filter, villageFilter, panchayatFilter, agencyFilter, kycFilter, searchTerm]);
 
     const columns: Column<Customer>[] = [
         { header: t('bookingsPage.headers.name'), accessor: c => <CustomerInfo customer={c} /> },
@@ -392,6 +397,16 @@ const BookingsPage: React.FC = () => {
                         {uniqueAgencies.map(a => (
                             <option key={a} value={a}>{t(`enums.agencies.${a}`) || a}</option>
                         ))}
+                    </select>
+                    
+                    <select
+                        value={kycFilter}
+                        onChange={(e) => setKycFilter(e.target.value as any)}
+                        className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                        <option value="all">{t('addCustomerPage.form.kyc')} ({t('customerListPage.all')})</option>
+                        <option value="completed">{t('customerListPage.kycCompleted')}</option>
+                        <option value="pending">{t('customerListPage.kycPending')}</option>
                     </select>
                 </div>
             </div>

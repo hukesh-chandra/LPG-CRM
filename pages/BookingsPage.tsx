@@ -69,12 +69,13 @@ const BookingsPage: React.FC = () => {
                 customer.customerId, 
                 customer.consumerNo,
                 customer.kyc ? t('customerListPage.kycCompleted') : t('customerListPage.kycPending'),
+                customer.remark || '',
                 formatDate(customer.lastBookingDate),
                 nextBookingDate
             ];
         });
 
-        const headers = ['Name', 'Relation Name', 'Mobile No', 'Village', 'Customer ID', 'Consumer No', 'KYC', 'Last Booking Date', 'Next Booking Date'];
+        const headers = ['Name', 'Relation Name', 'Mobile No', 'Village', 'Customer ID', 'Consumer No', 'KYC', 'Remark', 'Last Booking Date', 'Next Booking Date'];
         const worksheetData = [headers, ...dataToExport];
         
         const ws = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -100,6 +101,7 @@ const BookingsPage: React.FC = () => {
                     <th style="padding: 8px; text-align: left;">Customer ID</th>
                     <th style="padding: 8px; text-align: left;">Consumer No</th>
                     <th style="padding: 8px; text-align: left;">KYC</th>
+                    <th style="padding: 8px; text-align: left;">Remark</th>
                     <th style="padding: 8px; text-align: left;">Last Booking Date</th>
                     <th style="padding: 8px; text-align: left;">Next Booking Date</th>
                 </tr>
@@ -124,6 +126,7 @@ const BookingsPage: React.FC = () => {
                         <td style="padding: 8px;">${c.customerId}</td>
                         <td style="padding: 8px;">${c.consumerNo || ''}</td>
                         <td style="padding: 8px;">${kycStatus}</td>
+                        <td style="padding: 8px;">${c.remark || ''}</td>
                         <td style="padding: 8px;">${formatDate(c.lastBookingDate)}</td>
                         <td style="padding: 8px;">${nextBookingDate}</td>
                     </tr>

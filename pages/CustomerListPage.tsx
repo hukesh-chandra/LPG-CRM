@@ -15,6 +15,8 @@ const PRINTABLE_COLUMNS = [
     { key: 'village', header: 'Village' },
     { key: 'customerId', header: 'Customer ID' },
     { key: 'consumerNo', header: 'Consumer No' },
+    { key: 'kyc', header: 'KYC' },
+    { key: 'remark', header: 'Remark' },
 ];
 
 const PrintModal: React.FC<{

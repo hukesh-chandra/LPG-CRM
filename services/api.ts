@@ -473,8 +473,43 @@ export const updateTransaction = async (transactionId: string, updatedData: Upda
 }
 
 export const getDeliveries = async (): Promise<Delivery[]> => {
-    const snapshot = await deliveriesCollection.orderBy('requestedAt', 'desc').get();
+    let snapshot = await deliveriesCollection.orderBy('requestedAt', 'desc').get();
+    
+    // Cleanup old deliveries (> 45 days)
+    const now = new Date().getTime();
+    const fortyFiveDaysMs = 45 * 24 * 60 * 60 * 1000;
+    
+    await Promise.all(snapshot.docs.map(async (doc: any) => {
+        const data = doc.data();
+        if (!data.completedAt) {
+            const requestedTime = new Date(data.requestedAt).getTime();
+            if (now - requestedTime > fortyFiveDaysMs) {
+                // Booked but not delivered
+                const customerId = data.customerId;
+                const customer = await getCustomerById(customerId);
+                if (customer) {
+                   await addTransaction(customerId, {
+                       price: 0,
+                       amountPaid: 0,
+                       description: 'Booked but not delivered',
+                       gasCompanyGiven: customer.agencyName || 'Other',
+                       source: 'manual'
+                   });
+                }
+                // Delete from deliveries
+                await deleteDelivery(doc.id);
+            }
+        }
+    }));
+    
+    // Refetch snapshot to return updated deliveries
+    snapshot = await deliveriesCollection.orderBy('requestedAt', 'desc').get();
+    
     return snapshot.docs.map(deliveryFromDoc);
+}
+
+export const deleteDelivery = async (deliveryId: string): Promise<void> => {
+    await deliveriesCollection.doc(deliveryId).delete();
 }
 
 export const addDelivery = async (customerId: string): Promise<Delivery> => {

@@ -66,7 +66,8 @@ const AdminPage: React.FC = () => {
         return customers.filter(c => 
             c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             c.customerId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            c.mobileNo.includes(searchTerm)
+            (c.mobileNo && c.mobileNo.includes(searchTerm)) ||
+            (c.consumerNo && c.consumerNo.toLowerCase().includes(searchTerm.toLowerCase()))
         );
     }, [customers, searchTerm]);
     

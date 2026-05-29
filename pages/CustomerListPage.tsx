@@ -232,7 +232,8 @@ const CustomerListPage: React.FC = () => {
       .filter(c =>
         (c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
          c.customerId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         c.mobileNo.includes(searchTerm) ||
+         (c.mobileNo && c.mobileNo.includes(searchTerm)) ||
+         (c.consumerNo && c.consumerNo.toLowerCase().includes(searchTerm.toLowerCase())) ||
          c.village.toLowerCase().includes(searchTerm.toLowerCase()))
       )
       .filter(c => filters.panchayat ? c.panchayat === filters.panchayat : true)

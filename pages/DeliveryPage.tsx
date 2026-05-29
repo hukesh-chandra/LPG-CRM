@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getDeliveries, getCustomers, addDelivery, completeDelivery } from '../services/api';
+import { getDeliveries, getCustomers, addDelivery, completeDelivery, deleteDelivery } from '../services/api';
 import { Delivery, Customer, NewTransaction } from '../types';
 import { GAS_COMPANIES } from '../constants';
 import DataTable, { Column } from '../components/DataTable';
@@ -23,7 +23,12 @@ const AddDeliveryModal: React.FC<{
     const filteredCustomers = useMemo(() => {
         if (!searchTerm) return [];
         return customers
-            .filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.customerId.includes(searchTerm))
+            .filter(c => 
+                c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                c.customerId.includes(searchTerm) ||
+                (c.mobileNo && c.mobileNo.includes(searchTerm)) ||
+                (c.consumerNo && c.consumerNo.toLowerCase().includes(searchTerm.toLowerCase()))
+            )
             .slice(0, 10);
     }, [searchTerm, customers]);
 
@@ -341,10 +346,26 @@ const DeliveryPage: React.FC = () => {
         printWindow.print();
     };
 
+    const handleDeleteDelivery = async (deliveryId: string) => {
+        if (window.confirm("Are you sure you want to cancel this pending delivery?")) {
+            try {
+                await deleteDelivery(deliveryId);
+                fetchData();
+            } catch (error) {
+                console.error("Failed to delete delivery", error);
+            }
+        }
+    };
+
     const requestedColumns: Column<Delivery>[] = [
         { header: t('deliveryPage.headers.customer'), accessor: customerInfoAccessor },
         { header: t('deliveryPage.headers.requestedAt'), accessor: d => new Date(d.requestedAt).toLocaleString(locale) },
-        { header: t('deliveryPage.headers.actions'), accessor: d => <Button size="sm" onClick={() => setDeliveryToComplete(d)}>{t('deliveryPage.actions.markComplete')}</Button> }
+        { header: t('deliveryPage.headers.actions'), accessor: d => (
+            <div className="flex gap-2">
+                <Button size="sm" onClick={() => setDeliveryToComplete(d)}>{t('deliveryPage.actions.markComplete')}</Button>
+                <Button size="sm" variant="danger" onClick={() => handleDeleteDelivery(d.id)}>{t('buttons.cancel')}</Button>
+            </div>
+        )}
     ];
 
     const completedColumns: Column<Delivery>[] = [

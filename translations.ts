@@ -129,6 +129,7 @@ export const translations = {
             dueDate: 'Due Date',
             kyc: 'KYC',
             remark: 'Remark',
+            cardStatus: 'Card Status',
             kycCompleted: 'Completed',
             kycPending: 'Pending',
         },
@@ -353,6 +354,11 @@ export const translations = {
     },
     enums: {
         other: 'Other',
+        cardStatus: {
+            weHave: 'We have',
+            customerHas: 'Customer has',
+            notClear: 'Not clear'
+        },
         relationType: {
             'S/O': 'S/O',
             'W/O': 'W/O',
@@ -531,6 +537,7 @@ export const translations = {
             dueDate: 'देय तिथि',
             kyc: 'केवाईसी पूरा हुआ',
             remark: 'टिप्पणी',
+            cardStatus: 'कार्ड स्थिति',
         },
         errors: {
             nameRequired: 'नाम आवश्यक है।',
@@ -753,6 +760,11 @@ export const translations = {
     },
     enums: {
         other: 'अन्य',
+        cardStatus: {
+            weHave: 'हमारे पास है',
+            customerHas: 'ग्राहक के पास है',
+            notClear: 'स्पष्ट नहीं'
+        },
         relationType: {
             'S/O': 'S/O',
             'W/O': 'W/O',

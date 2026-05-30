@@ -14,9 +14,11 @@ interface CustomerDetailPageProps {
     id: string;
 }
 
-const CustomerInfo: React.FC<{ customer: Customer }> = ({ customer }) => {
+const CustomerInfo: React.FC<{ customer: Customer, onRefresh?: () => void }> = ({ customer, onRefresh }) => {
     const { t, language } = useLanguage();
     const locale = language === 'hi' ? 'hi-IN' : 'en-IN';
+
+    const [isUpdatingCard, setIsUpdatingCard] = useState(false);
 
     const isUnbooked = !customer.lastBookingDate || (new Date().getTime() - new Date(customer.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= 45;
     let bookingStatusText = t('customerDetailPage.unbooked');
@@ -25,6 +27,19 @@ const CustomerInfo: React.FC<{ customer: Customer }> = ({ customer }) => {
         nextDate.setDate(nextDate.getDate() + 45);
         bookingStatusText = t('customerDetailPage.bookedUntil', nextDate.toLocaleDateString(locale));
     }
+
+    const handleCardStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newVal = e.target.value;
+        setIsUpdatingCard(true);
+        try {
+            await updateCustomer(customer.id, { cardStatus: newVal as any });
+            if (onRefresh) onRefresh();
+        } catch (error) {
+            console.error('Failed to update card status', error);
+        } finally {
+            setIsUpdatingCard(false);
+        }
+    };
 
     const details = [
         { label: t('addCustomerPage.form.name'), value: customer.name },
@@ -39,6 +54,19 @@ const CustomerInfo: React.FC<{ customer: Customer }> = ({ customer }) => {
         { label: t('addCustomerPage.form.svNo'), value: customer.svNo },
         { label: t('addCustomerPage.form.aadhaarNo'), value: customer.aadhaarNo },
         { label: t('addCustomerPage.form.kyc'), value: customer.kyc ? t('customerListPage.kycCompleted') : t('customerListPage.kycPending') },
+        { label: t('addCustomerPage.form.cardStatus'), render: () => (
+            <select 
+                value={customer.cardStatus || ''}
+                onChange={handleCardStatusChange}
+                disabled={isUpdatingCard}
+                className="mt-1 block w-full text-sm border-gray-300 dark:border-gray-600 rounded bg-transparent dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-1"
+            >
+                <option value="">{t('enums.other')}</option>
+                <option value="weHave">{t('enums.cardStatus.weHave')}</option>
+                <option value="customerHas">{t('enums.cardStatus.customerHas')}</option>
+                <option value="notClear">{t('enums.cardStatus.notClear')}</option>
+            </select>
+        )},
         { label: t('addCustomerPage.form.connectionType'), value: t(`enums.connectionType.${customer.connectionType}` as any) },
         { label: t('addCustomerPage.form.dueDate'), value: customer.dueDate ? new Date(customer.dueDate).toLocaleDateString(locale) : 'N/A' },
         { label: t('addCustomerPage.form.remark'), value: customer.remark || 'N/A' },
@@ -56,11 +84,11 @@ const CustomerInfo: React.FC<{ customer: Customer }> = ({ customer }) => {
                     </p>
                 </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
                 {details.map(item => (
                     <div key={item.label}>
                         <p className="font-medium text-gray-500 dark:text-gray-400">{item.label}</p>
-                        <p className="text-gray-900 dark:text-white">{item.value}</p>
+                        {item.render ? item.render() : <p className="text-gray-900 dark:text-white mt-1">{item.value}</p>}
                     </div>
                 ))}
             </div>
@@ -114,7 +142,7 @@ const CustomerEditForm: React.FC<{ customer: Customer; onSave: () => void; onCan
             'name', 'customerId', 'consumerNo', 'lpgId', 'relationType', 'relationName', 'mobileNo',
             'panchayat', formData.panchayat === 'Other' ? 'otherPanchayat' : null,
             'village', formData.village === 'Other' ? 'otherVillage' : null,
-            'agencyName', 'svNo', 'aadhaarNo', 'connectionType', 'dueDate', 'remark'
+            'agencyName', 'svNo', 'aadhaarNo', 'connectionType', 'dueDate', 'cardStatus', 'remark'
         ].filter(Boolean) as string[];
 
         const currentIndex = fieldOrder.indexOf(currentField);
@@ -187,6 +215,12 @@ const CustomerEditForm: React.FC<{ customer: Customer; onSave: () => void; onCan
                 </Select>
                 {/* Fix: Changed ref callback to not return a value. */}
                 <Input ref={el => { formRefs.current['dueDate'] = el; }} onKeyDown={e => handleKeyDown(e, getNextField('dueDate'))} label={t('addCustomerPage.form.dueDate')} name="dueDate" type="date" value={formData.dueDate || ''} onChange={handleChange} />
+                <Select ref={el => { formRefs.current['cardStatus'] = el; }} onKeyDown={e => handleKeyDown(e, getNextField('cardStatus'))} label={t('addCustomerPage.form.cardStatus')} name="cardStatus" value={formData.cardStatus || ''} onChange={handleChange}>
+                    <option value="">{t('enums.other')}</option>
+                    <option value="weHave">{t('enums.cardStatus.weHave')}</option>
+                    <option value="customerHas">{t('enums.cardStatus.customerHas')}</option>
+                    <option value="notClear">{t('enums.cardStatus.notClear')}</option>
+                </Select>
                 <Input ref={el => { formRefs.current['remark'] = el; }} onKeyDown={e => handleKeyDown(e, getNextField('remark'))} label={t('addCustomerPage.form.remark')} name="remark" value={formData.remark || ''} onChange={handleChange} />
                 
                 <div className="flex items-center space-x-2 mt-4">
@@ -648,7 +682,7 @@ const CustomerDetailPage: React.FC<CustomerDetailPageProps> = ({ id }) => {
             {isEditMode ? (
                 <CustomerEditForm customer={customer} onSave={() => { setIsEditMode(false); fetchCustomerData(); }} onCancel={() => setIsEditMode(false)} />
             ) : (
-                <CustomerInfo customer={customer} />
+                <CustomerInfo customer={customer} onRefresh={fetchCustomerData} />
             )}
 
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">

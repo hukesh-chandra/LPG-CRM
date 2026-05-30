@@ -22,6 +22,7 @@ const ManualEntryForm: React.FC = () => {
         otherVillage: '',
         dueDate: '',
         remark: '',
+        cardStatus: '',
     });
     const [errors, setErrors] = useState<FormErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,7 +91,7 @@ const ManualEntryForm: React.FC = () => {
             'name', 'customerId', 'consumerNo', 'lpgId', 'relationType', 'relationName', 'mobileNo',
             'panchayat', formData.panchayat === 'Other' ? 'otherPanchayat' : null,
             'village', formData.village === 'Other' ? 'otherVillage' : null,
-            'agencyName', 'svNo', 'aadhaarNo', 'connectionType', 'dueDate', 'remark'
+            'agencyName', 'svNo', 'aadhaarNo', 'connectionType', 'dueDate', 'cardStatus', 'remark'
         ].filter(Boolean) as string[];
 
         const currentIndex = fieldOrder.indexOf(currentField);
@@ -171,6 +172,12 @@ const ManualEntryForm: React.FC = () => {
                 </Select>
                 {/* Fix: Changed ref callback to not return a value. */}
                 <Input ref={el => { formRefs.current['dueDate'] = el; }} onKeyDown={e => handleKeyDown(e, getNextField('dueDate'))} label={t('addCustomerPage.form.dueDate')} name="dueDate" type="date" value={formData.dueDate || ''} onChange={handleChange} />
+                <Select ref={el => { formRefs.current['cardStatus'] = el; }} onKeyDown={e => handleKeyDown(e, getNextField('cardStatus'))} label={t('addCustomerPage.form.cardStatus')} name="cardStatus" value={formData.cardStatus || ''} onChange={handleChange}>
+                    <option value="">{t('enums.other')}</option>
+                    <option value="weHave">{t('enums.cardStatus.weHave')}</option>
+                    <option value="customerHas">{t('enums.cardStatus.customerHas')}</option>
+                    <option value="notClear">{t('enums.cardStatus.notClear')}</option>
+                </Select>
                 <Input ref={el => { formRefs.current['remark'] = el; }} onKeyDown={e => handleKeyDown(e, getNextField('remark'))} label={t('addCustomerPage.form.remark')} name="remark" value={formData.remark || ''} onChange={handleChange} />
                 
                 <div className="flex items-center space-x-2 mt-4">

@@ -6,6 +6,31 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { CustomerInfo } from '../components/CustomerInfo';
 import Button from '../components/Button';
 
+const BookingDateInput = ({ customer, defaultValue, onUpdate }: { customer: Customer, defaultValue: string, onUpdate: (c: Customer, val: string) => void }) => {
+    const [val, setVal] = useState(defaultValue);
+    useEffect(() => setVal(defaultValue), [defaultValue]);
+    
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setVal(e.target.value);
+    };
+
+    const handleBlur = () => {
+        if (val !== defaultValue) {
+            onUpdate(customer, val);
+        }
+    };
+
+    return (
+        <input 
+            type="date"
+            value={val}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-transparent dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 max-w-[140px]"
+        />
+    );
+};
+
 const BookingsPage: React.FC = () => {
     const { t, language } = useLanguage();
     const locale = language === 'hi' ? 'hi-IN' : 'en-IN';
@@ -276,11 +301,10 @@ const BookingsPage: React.FC = () => {
         { 
             header: t('bookingsPage.headers.lastBookingDate'), 
             accessor: c => (
-                <input 
-                    type="date"
-                    value={c.lastBookingDate ? c.lastBookingDate.split('T')[0] : ''}
-                    onChange={(e) => updateBookingDate(c, e.target.value)}
-                    className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-transparent dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 max-w-[140px]"
+                <BookingDateInput 
+                    customer={c} 
+                    defaultValue={c.lastBookingDate ? c.lastBookingDate.split('T')[0] : ''} 
+                    onUpdate={updateBookingDate} 
                 />
             )
         },

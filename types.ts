@@ -30,7 +30,10 @@ export interface Customer {
   kyc?: boolean;
   lastBookingDate?: string | null;
   remark?: string;
+  cardStatus?: CardStatus | '';
 }
+
+export type CardStatus = 'weHave' | 'customerHas' | 'notClear';
 
 export type DocumentType = 'aadhaarCard' | 'bankPassbook' | 'consumerCard' | 'svDocument';
 

@@ -49,11 +49,15 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const filteredCustomers = customers.filter(c => 
-        c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        c.mobileNo.includes(searchQuery) ||
-        c.consumerNo.includes(searchQuery)
-    ).slice(0, 10);
+    const filteredCustomers = React.useMemo(() => {
+        if (!searchQuery.trim()) return customers.slice(0, 10);
+        const lowerSearch = searchQuery.toLowerCase();
+        return customers.filter(c => 
+            c.name.toLowerCase().includes(lowerSearch) || 
+            c.mobileNo.includes(searchQuery) ||
+            (c.consumerNo && c.consumerNo.includes(searchQuery))
+        ).slice(0, 10);
+    }, [customers, searchQuery]);
 
     const handleCustomerSelect = (customer: Customer) => {
         setSelectedCustomer(customer);
@@ -225,7 +229,7 @@ const Dashboard: React.FC = () => {
     setDateRange({ start, end });
   }
 
-  const transactionColumns: Column<Transaction & { customerName: string }>[] = [
+  const transactionColumns: Column<Transaction & { customerName: string }>[] = React.useMemo(() => [
     { header: t('dashboard.table.customer'), accessor: 'customerName' },
     { header: t('dashboard.table.date'), accessor: (item) => new Date(item.date).toLocaleDateString(locale) },
     { header: t('dashboard.table.price'), accessor: (item) => `₹${item.price.toLocaleString(locale)}` },
@@ -236,7 +240,7 @@ const Dashboard: React.FC = () => {
         return <span className={color}>{`₹${due.toLocaleString(locale)}`}</span>;
     } },
     { header: t('dashboard.table.description'), accessor: 'description' },
-  ];
+  ], [t, locale]);
   
   if (loading) {
     return <div className="text-center p-8">{t('messages.loadingDashboard')}</div>;

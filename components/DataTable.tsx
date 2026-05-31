@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 
 export interface Column<T> {
   header: string;
@@ -11,6 +11,20 @@ interface DataTableProps<T> {
   data: T[];
   emptyMessage?: string;
 }
+
+const TableRow = memo(<T extends { id: string | number }>({ item, columns }: { item: T, columns: Column<T>[] }) => {
+  return (
+    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+      {columns.map((col, index) => (
+        <td key={index} className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+          {typeof col.accessor === 'function'
+            ? col.accessor(item)
+            : (item[col.accessor] as React.ReactNode)}
+        </td>
+      ))}
+    </tr>
+  );
+}) as <T extends { id: string | number }>(props: { item: T, columns: Column<T>[] }) => React.ReactElement;
 
 const DataTable = <T extends { id: string | number },>(
   { columns, data, emptyMessage = "No data available" }: DataTableProps<T>
@@ -34,15 +48,7 @@ const DataTable = <T extends { id: string | number },>(
         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
           {data.length > 0 ? (
             data.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                {columns.map((col, index) => (
-                  <td key={index} className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                    {typeof col.accessor === 'function'
-                      ? col.accessor(item)
-                      : (item[col.accessor] as React.ReactNode)}
-                  </td>
-                ))}
-              </tr>
+              <TableRow key={item.id} item={item} columns={columns} />
             ))
           ) : (
             <tr>
@@ -57,4 +63,4 @@ const DataTable = <T extends { id: string | number },>(
   );
 };
 
-export default DataTable;
+export default memo(DataTable) as typeof DataTable;

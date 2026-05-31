@@ -242,7 +242,7 @@ const CustomerListPage: React.FC = () => {
       .filter(c => filters.agencyName ? c.agencyName === filters.agencyName : true);
   }, [customers, searchTerm, filters]);
 
-  const columns: Column<Customer>[] = [
+  const columns: Column<Customer>[] = useMemo(() => [
     { header: t('customerListPage.headers.name'), accessor: (c) => <CustomerInfo customer={c} /> },
     { header: t('customerListPage.headers.agency'), accessor: (c) => c.agencyName ? t(`enums.agencies.${c.agencyName}`) : '' },
     { header: t('customerListPage.headers.connectionType'), accessor: (c) => t(`enums.connectionType.${c.connectionType}` as any) },
@@ -255,7 +255,7 @@ const CustomerListPage: React.FC = () => {
         </a>
       ),
     },
-  ];
+  ], [t]);
 
   if (loading) {
     return <div className="text-center p-8">{t('messages.loadingCustomers')}</div>;

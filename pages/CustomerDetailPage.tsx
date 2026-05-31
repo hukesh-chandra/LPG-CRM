@@ -19,6 +19,11 @@ const CustomerInfo: React.FC<{ customer: Customer, onRefresh?: () => void }> = (
     const locale = language === 'hi' ? 'hi-IN' : 'en-IN';
 
     const [isUpdatingCard, setIsUpdatingCard] = useState(false);
+    const [cardStatus, setCardStatus] = useState<string>(customer.cardStatus || '');
+
+    useEffect(() => {
+        setCardStatus(customer.cardStatus || '');
+    }, [customer.cardStatus]);
 
     const isUnbooked = !customer.lastBookingDate || (new Date().getTime() - new Date(customer.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= 45;
     let bookingStatusText = t('customerDetailPage.unbooked');
@@ -30,11 +35,13 @@ const CustomerInfo: React.FC<{ customer: Customer, onRefresh?: () => void }> = (
 
     const handleCardStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newVal = e.target.value;
+        setCardStatus(newVal); // Optimistic UI
         setIsUpdatingCard(true);
         try {
             await updateCustomer(customer.id, { cardStatus: newVal as any });
             if (onRefresh) onRefresh();
         } catch (error) {
+            setCardStatus(customer.cardStatus || ''); // Revert on error
             console.error('Failed to update card status', error);
         } finally {
             setIsUpdatingCard(false);
@@ -56,7 +63,7 @@ const CustomerInfo: React.FC<{ customer: Customer, onRefresh?: () => void }> = (
         { label: t('addCustomerPage.form.kyc'), value: customer.kyc ? t('customerListPage.kycCompleted') : t('customerListPage.kycPending') },
         { label: t('addCustomerPage.form.cardStatus'), render: () => (
             <select 
-                value={customer.cardStatus || ''}
+                value={cardStatus}
                 onChange={handleCardStatusChange}
                 disabled={isUpdatingCard}
                 className="mt-1 block w-full text-sm border-gray-300 dark:border-gray-600 rounded bg-transparent dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-1"

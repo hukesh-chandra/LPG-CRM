@@ -18,19 +18,24 @@ const AddDeliveryModal: React.FC<{
     const { t } = useLanguage();
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'consumerNo' | 'customerId'>('mobileNo');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const filteredCustomers = useMemo(() => {
         if (!searchTerm) return [];
+        const lowerSearch = searchTerm.trim().toLowerCase();
         return customers
-            .filter(c => 
-                c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                c.customerId.includes(searchTerm) ||
-                (c.mobileNo && c.mobileNo.includes(searchTerm)) ||
-                (c.consumerNo && c.consumerNo.toLowerCase().includes(searchTerm.toLowerCase()))
-            )
+            .filter(c => {
+                switch (searchBy) {
+                    case 'mobileNo': return c.mobileNo && c.mobileNo.includes(searchTerm.trim());
+                    case 'name': return c.name && c.name.toLowerCase().includes(lowerSearch);
+                    case 'consumerNo': return c.consumerNo && c.consumerNo.toLowerCase().includes(lowerSearch);
+                    case 'customerId': return c.customerId && c.customerId.toLowerCase().includes(lowerSearch);
+                    default: return true;
+                }
+            })
             .slice(0, 10);
-    }, [searchTerm, customers]);
+    }, [searchTerm, customers, searchBy]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,15 +58,31 @@ const AddDeliveryModal: React.FC<{
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-                <Input 
-                    label={t('deliveryPage.addModal.searchCustomer')}
-                    placeholder={t('deliveryPage.addModal.searchPlaceholder')}
-                    value={searchTerm}
-                    onChange={e => {
-                        setSearchTerm(e.target.value);
-                        setSelectedCustomerId('');
-                    }}
-                />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('deliveryPage.addModal.searchCustomer')}
+                </label>
+                <div className="flex gap-2">
+                    <select 
+                        value={searchBy}
+                        onChange={(e) => setSearchBy(e.target.value as any)}
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                        <option value="mobileNo">{t('addCustomerPage.form.mobileNo')}</option>
+                        <option value="name">{t('addCustomerPage.form.name')}</option>
+                        <option value="consumerNo">{t('addCustomerPage.form.consumerNo')}</option>
+                        <option value="customerId">{t('addCustomerPage.form.customerId')}</option>
+                    </select>
+                    <input
+                        type="text"
+                        placeholder={t('deliveryPage.addModal.searchPlaceholder')}
+                        value={searchTerm}
+                        onChange={e => {
+                            setSearchTerm(e.target.value);
+                            setSelectedCustomerId('');
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                </div>
                 {searchTerm && (
                     <div className="mt-2 border border-gray-300 rounded-md max-h-40 overflow-y-auto">
                         {filteredCustomers.length > 0 ? (

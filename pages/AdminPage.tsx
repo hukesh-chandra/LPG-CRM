@@ -13,6 +13,7 @@ const AdminPage: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'consumerNo' | 'customerId'>('mobileNo');
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -63,13 +64,17 @@ const AdminPage: React.FC = () => {
 
     const filteredCustomers = useMemo(() => {
         if (!searchTerm) return customers;
-        return customers.filter(c => 
-            c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            c.customerId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (c.mobileNo && c.mobileNo.includes(searchTerm)) ||
-            (c.consumerNo && c.consumerNo.toLowerCase().includes(searchTerm.toLowerCase()))
-        );
-    }, [customers, searchTerm]);
+        const lowerSearch = searchTerm.trim().toLowerCase();
+        return customers.filter(c => {
+            switch (searchBy) {
+                case 'mobileNo': return c.mobileNo && c.mobileNo.includes(searchTerm.trim());
+                case 'name': return c.name && c.name.toLowerCase().includes(lowerSearch);
+                case 'consumerNo': return c.consumerNo && c.consumerNo.toLowerCase().includes(lowerSearch);
+                case 'customerId': return c.customerId && c.customerId.toLowerCase().includes(lowerSearch);
+                default: return true;
+            }
+        });
+    }, [customers, searchTerm, searchBy]);
     
     const customerColumns: Column<Customer>[] = [
         { header: t('adminPage.headers.name'), accessor: c => <CustomerInfo customer={c} /> },
@@ -138,13 +143,25 @@ const AdminPage: React.FC = () => {
                  <div className="space-y-8">
                     <div>
                         <h3 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">{t('adminPage.customerManagement')}</h3>
-                         <input
-                            type="text"
-                            placeholder={t('adminPage.searchPlaceholder')}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full mb-4 px-4 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        />
+                        <div className="flex gap-2 w-full mb-4">
+                            <select 
+                                value={searchBy}
+                                onChange={(e) => setSearchBy(e.target.value as any)}
+                                className="px-4 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            >
+                                <option value="mobileNo">{t('addCustomerPage.form.mobileNo')}</option>
+                                <option value="name">{t('addCustomerPage.form.name')}</option>
+                                <option value="consumerNo">{t('addCustomerPage.form.consumerNo')}</option>
+                                <option value="customerId">{t('addCustomerPage.form.customerId')}</option>
+                            </select>
+                            <input
+                                type="text"
+                                placeholder={t('adminPage.searchPlaceholder')}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                        </div>
                         <DataTable columns={customerColumns} data={filteredCustomers} />
                     </div>
 

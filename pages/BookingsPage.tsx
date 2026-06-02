@@ -42,6 +42,7 @@ const BookingsPage: React.FC = () => {
     const [agencyFilter, setAgencyFilter] = useState<string>('all');
     const [kycFilter, setKycFilter] = useState<'all' | 'completed' | 'pending'>('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'consumerNo' | 'customerId'>('mobileNo');
 
     const uniquePanchayats = useMemo(() => Array.from(new Set(customers.map(c => c.panchayat === 'Other' ? c.otherPanchayat || 'Other' : c.panchayat).filter(Boolean))), [customers]);
     const uniqueVillages = useMemo(() => {
@@ -264,14 +265,19 @@ const BookingsPage: React.FC = () => {
 
     const filteredCustomers = useMemo(() => {
         const now = new Date().getTime();
-        const searchLower = searchTerm.toLowerCase();
+        const searchLower = searchTerm.trim().toLowerCase();
         
         return customers.filter(c => {
-            const matchesSearch = c.name.toLowerCase().includes(searchLower) ||
-                                 c.customerId.toLowerCase().includes(searchLower) ||
-                                 c.mobileNo.includes(searchTerm) ||
-                                 (c.consumerNo && c.consumerNo.toLowerCase().includes(searchLower));
-            if (searchTerm && !matchesSearch) return false;
+            if (searchTerm.trim()) {
+                let matchesSearch = false;
+                switch (searchBy) {
+                    case 'mobileNo': matchesSearch = !!(c.mobileNo && c.mobileNo.includes(searchTerm.trim())); break;
+                    case 'name': matchesSearch = !!(c.name && c.name.toLowerCase().includes(searchLower)); break;
+                    case 'consumerNo': matchesSearch = !!(c.consumerNo && c.consumerNo.toLowerCase().includes(searchLower)); break;
+                    case 'customerId': matchesSearch = !!(c.customerId && c.customerId.toLowerCase().includes(searchLower)); break;
+                }
+                if (!matchesSearch) return false;
+            }
 
             const cycleDays = getBookingCycleDays(c.agencyName);
             const isUnbooked = !c.lastBookingDate || (now - new Date(c.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= cycleDays;
@@ -353,7 +359,17 @@ const BookingsPage: React.FC = () => {
             </div>
             
             <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 w-full md:w-auto">
+                    <select 
+                        value={searchBy}
+                        onChange={(e) => setSearchBy(e.target.value as any)}
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                        <option value="mobileNo">{t('addCustomerPage.form.mobileNo')}</option>
+                        <option value="name">{t('addCustomerPage.form.name')}</option>
+                        <option value="consumerNo">{t('addCustomerPage.form.consumerNo')}</option>
+                        <option value="customerId">{t('addCustomerPage.form.customerId')}</option>
+                    </select>
                     <input
                         type="text"
                         placeholder={t('deliveryPage.searchPlaceholder') || "Search..."}

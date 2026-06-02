@@ -68,6 +68,7 @@ const CustomerListPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'consumerNo' | 'customerId'>('mobileNo');
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [filters, setFilters] = useState({
     panchayat: '',
@@ -229,13 +230,17 @@ const CustomerListPage: React.FC = () => {
 
   const filteredCustomers = useMemo(() => {
     return customers
-      .filter(c =>
-        (c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         c.customerId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         (c.mobileNo && c.mobileNo.includes(searchTerm)) ||
-         (c.consumerNo && c.consumerNo.toLowerCase().includes(searchTerm.toLowerCase())) ||
-         c.village.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
+      .filter(c => {
+         if (!searchTerm.trim()) return true;
+         const lowerTerm = searchTerm.trim().toLowerCase();
+         switch (searchBy) {
+            case 'mobileNo': return c.mobileNo && c.mobileNo.includes(searchTerm.trim());
+            case 'name': return c.name && c.name.toLowerCase().includes(lowerTerm);
+            case 'consumerNo': return c.consumerNo && c.consumerNo.toLowerCase().includes(lowerTerm);
+            case 'customerId': return c.customerId && c.customerId.toLowerCase().includes(lowerTerm);
+            default: return true;
+         }
+      })
       .filter(c => filters.panchayat ? c.panchayat === filters.panchayat : true)
       .filter(c => filters.village ? c.village === filters.village : true)
       .filter(c => filters.connectionType ? c.connectionType === filters.connectionType : true)
@@ -272,13 +277,25 @@ const CustomerListPage: React.FC = () => {
       </div>
       
       <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow space-y-4">
-        <input
-            type="text"
-            placeholder={t('customerListPage.searchPlaceholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-        />
+        <div className="flex gap-2">
+            <select 
+                value={searchBy}
+                onChange={(e) => setSearchBy(e.target.value as any)}
+                className="px-4 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+                <option value="mobileNo">{t('addCustomerPage.form.mobileNo')}</option>
+                <option value="name">{t('addCustomerPage.form.name')}</option>
+                <option value="consumerNo">{t('addCustomerPage.form.consumerNo')}</option>
+                <option value="customerId">{t('addCustomerPage.form.customerId')}</option>
+            </select>
+            <input
+                type="text"
+                placeholder={t('customerListPage.searchPlaceholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <select name="panchayat" value={filters.panchayat} onChange={handleFilterChange} className="w-full px-4 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <option value="">{t('customerListPage.all')}</option>

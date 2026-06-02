@@ -24,6 +24,7 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
     const { t } = useLanguage();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'consumerNo' | 'customerId'>('mobileNo');
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -51,13 +52,17 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
 
     const filteredCustomers = React.useMemo(() => {
         if (!searchQuery.trim()) return customers.slice(0, 10);
-        const lowerSearch = searchQuery.toLowerCase();
-        return customers.filter(c => 
-            c.name.toLowerCase().includes(lowerSearch) || 
-            c.mobileNo.includes(searchQuery) ||
-            (c.consumerNo && c.consumerNo.includes(searchQuery))
-        ).slice(0, 10);
-    }, [customers, searchQuery]);
+        const lowerSearch = searchQuery.trim().toLowerCase();
+        return customers.filter(c => {
+            switch (searchBy) {
+                case 'mobileNo': return c.mobileNo && c.mobileNo.includes(searchQuery.trim());
+                case 'name': return c.name && c.name.toLowerCase().includes(lowerSearch);
+                case 'consumerNo': return c.consumerNo && c.consumerNo.toLowerCase().includes(lowerSearch);
+                case 'customerId': return c.customerId && c.customerId.toLowerCase().includes(lowerSearch);
+                default: return true;
+            }
+        }).slice(0, 10);
+    }, [customers, searchQuery, searchBy]);
 
     const handleCustomerSelect = (customer: Customer) => {
         setSelectedCustomer(customer);
@@ -129,19 +134,31 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {t('dashboard.quickSell.searchCustomer')}
                         </label>
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                setShowDropdown(true);
-                                setSelectedCustomer(null);
-                            }}
-                            onFocus={() => setShowDropdown(true)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            placeholder={t('dashboard.quickSell.searchCustomer')}
-                            required
-                        />
+                        <div className="flex gap-2">
+                            <select 
+                                value={searchBy}
+                                onChange={(e) => setSearchBy(e.target.value as any)}
+                                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            >
+                                <option value="mobileNo">{t('addCustomerPage.form.mobileNo')}</option>
+                                <option value="name">{t('addCustomerPage.form.name')}</option>
+                                <option value="consumerNo">{t('addCustomerPage.form.consumerNo')}</option>
+                                <option value="customerId">{t('addCustomerPage.form.customerId')}</option>
+                            </select>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setShowDropdown(true);
+                                    setSelectedCustomer(null);
+                                }}
+                                onFocus={() => setShowDropdown(true)}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                placeholder={t('dashboard.quickSell.searchCustomer')}
+                                required
+                            />
+                        </div>
                         <p className="text-xs text-gray-500 mt-1">{t('dashboard.quickSell.customerNote')}</p>
                         {showDropdown && searchQuery && !selectedCustomer && (
                             <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">

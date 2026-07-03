@@ -9,6 +9,7 @@ import CustomerDetailPage from './pages/CustomerDetailPage';
 import AdminPage from './pages/AdminPage';
 import DeliveryPage from './pages/DeliveryPage';
 import BookingsPage from './pages/BookingsPage';
+import GasTransactionsPage from './pages/GasTransactionsPage';
 import PasswordModal from './components/PasswordModal';
 import { useDarkMode } from './hooks/useDarkMode';
 import { checkAdminPassword } from './services/api';
@@ -20,6 +21,7 @@ export type Route =
   | { name: 'add-customer' }
   | { name: 'deliveries' }
   | { name: 'bookings' }
+  | { name: 'gas-transactions' }
   | { name: 'admin' }
   | { name: 'customer-detail'; id: string }
   | { name: 'not-found' };
@@ -39,6 +41,8 @@ const parseRoute = (hash: string): Route => {
             return { name: 'deliveries' };
         case 'bookings':
             return { name: 'bookings' };
+        case 'gas-transactions':
+            return { name: 'gas-transactions' };
         case 'admin':
             return { name: 'admin' };
         default:
@@ -92,6 +96,8 @@ const AppContent: React.FC = () => {
                 return <DeliveryPage />;
             case 'bookings':
                 return <BookingsPage />;
+            case 'gas-transactions':
+                return <GasTransactionsPage />;
             case 'admin':
                 return <AdminPage />;
             case 'customer-detail':

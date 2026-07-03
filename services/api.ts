@@ -394,8 +394,9 @@ export const getTransactionsByCustomerId = async (customerId: string): Promise<T
     return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
-export const addTransaction = async (customerId: string | undefined, transactionData: NewTransaction): Promise<Transaction> => {
+export const addTransaction = async (customerId: string | undefined, transactionData: NewTransaction & { date?: string }): Promise<Transaction> => {
     const newTransactionRef = transactionsCollection.doc();
+    const transactionDate = transactionData.date || new Date().toISOString();
 
     if (customerId) {
         const customerRef = customersCollection.doc(customerId);
@@ -411,16 +412,16 @@ export const addTransaction = async (customerId: string | undefined, transaction
             t.set(newTransactionRef, sanitize({
                 ...transactionData,
                 customerId,
-                date: new Date().toISOString(),
+                date: transactionDate,
                 source: transactionData.source || 'manual',
             }));
         });
 
-        return { id: newTransactionRef.id, customerId, date: new Date().toISOString(), source: transactionData.source || 'manual', ...transactionData };
+        return { id: newTransactionRef.id, customerId, date: transactionDate, source: transactionData.source || 'manual', ...transactionData };
     } else {
         const data = sanitize({
             ...transactionData,
-            date: new Date().toISOString(),
+            date: transactionDate,
             source: transactionData.source || 'quick-sell',
         });
         await newTransactionRef.set(data);

@@ -404,8 +404,9 @@ export const translations = {
             'BIPIN BHARAT GAS GRAMIN VITRAK (UGMA)': 'BIPIN BHARAT GAS GRAMIN VITRAK (UGMA)',
             'BELCHI BHARATGAS GRAMIN VITRAK': 'BELCHI BHARATGAS GRAMIN VITRAK',
             'Other': 'Other'
-        },
-        gasTransactionsPage: {
+        }
+    },
+    gasTransactionsPage: {
             title: 'Gas Transactions',
             addEntry: 'Record Gas Sale / Entry',
             datewiseTransactions: 'Date-wise Transactions',
@@ -431,7 +432,6 @@ export const translations = {
             manualLabel: 'Manual (Not in Customer List)',
             noTransactions: 'No gas transactions found.'
         }
-    }
   },
   hi: {
     header: {
@@ -837,8 +837,9 @@ export const translations = {
             'BIPIN BHARAT GAS GRAMIN VITRAK (UGMA)': 'बिपिन भारत गैस ग्रामीण वितरक (उगमा)',
             'BELCHI BHARATGAS GRAMIN VITRAK': 'बेलछी भारतगैस ग्रामीण वितरक',
             'Other': 'अन्य'
-        },
-        gasTransactionsPage: {
+        }
+    },
+    gasTransactionsPage: {
             title: 'गैस लेनदेन',
             addEntry: 'गैस बिक्री / प्रविष्टि दर्ज करें',
             datewiseTransactions: 'दिनांक-वार लेनदेन',
@@ -864,6 +865,5 @@ export const translations = {
             manualLabel: 'मैनुअल (ग्राहक सूची में नहीं)',
             noTransactions: 'कोई गैस लेनदेन नहीं मिला।'
         }
-    }
   },
 };

@@ -318,20 +318,22 @@ const GasTransactionsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Form Container */}
-        <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl shadow border border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-            {t('gasTransactionsPage.addEntry')}
-          </h2>
+      {/* Form Container (Full Width Stacked) */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+        <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">
+          {t('gasTransactionsPage.addEntry')}
+        </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Form Fields Responsive Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
             {/* Customer Type Selector */}
-            <div>
+            <div className="flex flex-col justify-end">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('gasTransactionsPage.customerType')}
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 h-10">
                 <button
                   type="button"
                   onClick={() => {
@@ -363,12 +365,15 @@ const GasTransactionsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Registered Customer Search */}
-            {customerType === 'registered' && (
-              <div className="space-y-2 relative" ref={dropdownRef}>
+            {/* Customer Lookup or Entry */}
+            {customerType === 'registered' ? (
+              <div className="md:col-span-2 relative flex flex-col justify-end" ref={dropdownRef}>
                 {!selectedCustomer ? (
                   <>
-                    <div className="flex gap-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('gasTransactionsPage.searchCustomer')}
+                    </label>
+                    <div className="flex gap-2 h-10">
                       <select
                         value={searchBy}
                         onChange={(e) => setSearchBy(e.target.value as any)}
@@ -394,7 +399,7 @@ const GasTransactionsPage: React.FC = () => {
 
                     {/* Autocomplete Dropdown */}
                     {showDropdown && searchQuery.trim() !== '' && (
-                      <div className="absolute left-0 right-0 z-10 mt-1 max-h-60 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg divide-y divide-gray-100 dark:divide-gray-700">
+                      <div className="absolute left-0 right-0 z-10 top-full mt-1 max-h-60 overflow-y-auto bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg divide-y divide-gray-100 dark:divide-gray-600">
                         {filteredCustomers.length > 0 ? (
                           filteredCustomers.map(customer => (
                             <button
@@ -405,11 +410,11 @@ const GasTransactionsPage: React.FC = () => {
                                 setShowDropdown(false);
                                 setSearchQuery('');
                               }}
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors"
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 transition-colors"
                             >
-                              <div className="font-semibold">{customer.name}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {t('addCustomerPage.form.consumerNo')}: {customer.consumerNo} | {t('addCustomerPage.form.mobileNo')}: {customer.mobileNo}
+                              <div className="font-semibold text-sm">{customer.name}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                Mob: {customer.mobileNo} &bull; {customer.village === 'Other' ? customer.otherVillage : t(`enums.villages.${customer.village}`)} &bull; {t('addCustomerPage.form.consumerNo')}: {customer.consumerNo}
                               </div>
                             </button>
                           ))
@@ -433,35 +438,33 @@ const GasTransactionsPage: React.FC = () => {
                   </>
                 ) : (
                   /* Selected Customer Card */
-                  <div className="p-3 bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-900 rounded-lg relative">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCustomer(null)}
-                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg font-bold"
-                    >
-                      &times;
-                    </button>
-                    <div className="font-bold text-primary-900 dark:text-primary-300">
-                      {selectedCustomer.name}
-                    </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 space-y-0.5">
-                      <div>{t('addCustomerPage.form.consumerNo')}: {selectedCustomer.consumerNo}</div>
-                      <div>{t('addCustomerPage.form.mobileNo')}: {selectedCustomer.mobileNo}</div>
-                      <div>
-                        {language === 'hi' ? 'बकाया राशि' : 'Balance'}:{' '}
-                        <span className={selectedCustomer.balance > 0 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>
-                          ₹{selectedCustomer.balance.toLocaleString(locale)}
+                  <>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('gasTransactionsPage.selectCustomer')}
+                    </label>
+                    <div className="p-2 h-10 flex items-center justify-between bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-900 rounded-lg relative">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-primary-900 dark:text-primary-300">
+                          {selectedCustomer.name}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          ({t('addCustomerPage.form.consumerNo')}: {selectedCustomer.consumerNo} | {language === 'hi' ? 'बकाया' : 'Due'}: <span className={selectedCustomer.balance > 0 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>₹{selectedCustomer.balance.toLocaleString(locale)}</span>)
                         </span>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCustomer(null)}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg font-bold leading-none px-1"
+                      >
+                        &times;
+                      </button>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
-            )}
-
-            {/* Unregistered Customer Entry */}
-            {customerType === 'manual' && (
-              <div className="space-y-3">
+            ) : (
+              /* Manual Input Fields side by side */
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label={t('gasTransactionsPage.name')}
                   name="walkInName"
@@ -470,23 +473,23 @@ const GasTransactionsPage: React.FC = () => {
                   placeholder={language === 'hi' ? 'जैसे: राहुल कुमार' : 'e.g. Rahul Kumar'}
                   required
                 />
-                <Input
-                  label={t('gasTransactionsPage.mobileNo')}
-                  name="walkInMobile"
-                  value={walkInMobile}
-                  onChange={(e) => setWalkInMobile(e.target.value)}
-                  placeholder="10-digit mobile number (optional)"
-                  maxLength={10}
-                />
-                <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium">
-                  {language === 'hi'
-                    ? '* यह ग्राहक सूची में नहीं जोड़ा जाएगा, केवल लेनदेन सहेजा जाएगा।'
-                    : '* This customer will not be added to the customer list, only the transaction will be saved.'}
-                </p>
+                <div className="relative">
+                  <Input
+                    label={t('gasTransactionsPage.mobileNo')}
+                    name="walkInMobile"
+                    value={walkInMobile}
+                    onChange={(e) => setWalkInMobile(e.target.value)}
+                    placeholder="10-digit mobile number (optional)"
+                    maxLength={10}
+                  />
+                  <p className="absolute text-[10px] text-yellow-600 dark:text-yellow-400 font-medium mt-0.5 right-0">
+                    {language === 'hi' ? '* ग्राहक सूची में नहीं जुड़ेगा' : '* Won\'t add to main list'}
+                  </p>
+                </div>
               </div>
             )}
 
-            {/* Transaction Date picker */}
+            {/* Date field */}
             <Input
               label={t('gasTransactionsPage.date')}
               name="transactionDate"
@@ -496,57 +499,57 @@ const GasTransactionsPage: React.FC = () => {
               required
             />
 
-            {/* Price & Amount Paid Row */}
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label={t('gasTransactionsPage.price')}
-                name="price"
-                type="number"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="₹"
-                min="0"
-                required
-              />
-              <Input
-                label={t('gasTransactionsPage.amountPaid')}
-                name="amountPaid"
-                type="number"
-                value={amountPaid}
-                onChange={(e) => setAmountPaid(e.target.value)}
-                placeholder="₹"
-                min="0"
-                required
-              />
-            </div>
+            {/* Price field */}
+            <Input
+              label={t('gasTransactionsPage.price')}
+              name="price"
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="₹"
+              min="0"
+              required
+            />
 
-            {/* Gas Companies Selection Row */}
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                label={t('gasTransactionsPage.gasCompanyGiven')}
-                name="gasCompanyGiven"
-                value={gasCompanyGiven}
-                onChange={(e) => setGasCompanyGiven(e.target.value)}
-                required
-              >
-                {GAS_COMPANIES.map(company => (
-                  <option key={company} value={company}>{company}</option>
-                ))}
-              </Select>
-              <Select
-                label={t('gasTransactionsPage.gasCompanyReceived')}
-                name="gasCompanyReceived"
-                value={gasCompanyReceived}
-                onChange={(e) => setGasCompanyReceived(e.target.value)}
-                required
-              >
-                {GAS_COMPANIES.map(company => (
-                  <option key={company} value={company}>{company}</option>
-                ))}
-              </Select>
-            </div>
+            {/* Amount Paid field */}
+            <Input
+              label={t('gasTransactionsPage.amountPaid')}
+              name="amountPaid"
+              type="number"
+              value={amountPaid}
+              onChange={(e) => setAmountPaid(e.target.value)}
+              placeholder="₹"
+              min="0"
+              required
+            />
 
-            {/* Description */}
+            {/* Gas Company Given selector */}
+            <Select
+              label={t('gasTransactionsPage.gasCompanyGiven')}
+              name="gasCompanyGiven"
+              value={gasCompanyGiven}
+              onChange={(e) => setGasCompanyGiven(e.target.value)}
+              required
+            >
+              {GAS_COMPANIES.map(company => (
+                <option key={company} value={company}>{company}</option>
+              ))}
+            </Select>
+
+            {/* Gas Company Received selector */}
+            <Select
+              label={t('gasTransactionsPage.gasCompanyReceived')}
+              name="gasCompanyReceived"
+              value={gasCompanyReceived}
+              onChange={(e) => setGasCompanyReceived(e.target.value)}
+              required
+            >
+              {GAS_COMPANIES.map(company => (
+                <option key={company} value={company}>{company}</option>
+              ))}
+            </Select>
+
+            {/* Description field */}
             <Input
               label={t('gasTransactionsPage.description')}
               name="description"
@@ -555,8 +558,10 @@ const GasTransactionsPage: React.FC = () => {
               placeholder="e.g. 14.2kg Refill, Double Bottle, etc."
               required
             />
+          </div>
 
-            {/* Message/Errors */}
+          {/* Form Actions (Submit & Alerts in one container) */}
+          <div className="flex flex-col gap-4 border-t border-gray-100 dark:border-gray-700 pt-6">
             {formError && (
               <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-sm rounded-md font-medium">
                 {formError}
@@ -569,74 +574,91 @@ const GasTransactionsPage: React.FC = () => {
               </div>
             )}
 
-            {/* Submit Button */}
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full md:w-64"
+                disabled={isSubmitting}
+              >
+                {isSubmitting
+                  ? (language === 'hi' ? 'दर्ज किया जा रहा है...' : 'Recording...')
+                  : t('gasTransactionsPage.addEntry')}
+              </Button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      {/* Transactions Table Container (Full Width Stacked) */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow flex flex-col">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-4 border-b border-gray-100 dark:border-gray-700 mb-6 gap-4">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            {t('gasTransactionsPage.datewiseTransactions')}
+          </h2>
+
+          {/* Time Filter Tabs (Using Standard Theme Button Group) */}
+          <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
             <Button
-              type="submit"
-              variant="primary"
-              className="w-full"
-              disabled={isSubmitting}
+              type="button"
+              size="sm"
+              variant={tableFilter === 'all' ? 'primary' : 'secondary'}
+              onClick={() => setTableFilter('all')}
             >
-              {isSubmitting
-                ? (language === 'hi' ? 'दर्ज किया जा रहा है...' : 'Recording...')
-                : t('gasTransactionsPage.addEntry')}
+              {t('gasTransactionsPage.allTime')}
             </Button>
-          </form>
+            <Button
+              type="button"
+              size="sm"
+              variant={tableFilter === 'today' ? 'primary' : 'secondary'}
+              onClick={() => setTableFilter('today')}
+            >
+              {t('gasTransactionsPage.today')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={tableFilter === 'thisMonth' ? 'primary' : 'secondary'}
+              onClick={() => setTableFilter('thisMonth')}
+            >
+              {t('gasTransactionsPage.thisMonth')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={tableFilter === 'thisYear' ? 'primary' : 'secondary'}
+              onClick={() => setTableFilter('thisYear')}
+            >
+              {t('gasTransactionsPage.thisYear')}
+            </Button>
+          </div>
         </div>
 
-        {/* Transactions Table Container */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow border border-gray-200 dark:border-gray-700 flex flex-col h-fit">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-gray-100 dark:border-gray-700 mb-4 gap-4">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {t('gasTransactionsPage.datewiseTransactions')}
-            </h2>
-
-            {/* Time Filter Tabs */}
-            <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg text-xs font-semibold">
-              {(['all', 'today', 'thisMonth', 'thisYear'] as const).map(filter => (
-                <button
-                  key={filter}
-                  onClick={() => setTableFilter(filter)}
-                  className={`px-3 py-1.5 rounded-md transition-colors ${
-                    tableFilter === filter
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  {filter === 'all' && t('gasTransactionsPage.allTime')}
-                  {filter === 'today' && t('gasTransactionsPage.today')}
-                  {filter === 'thisMonth' && t('gasTransactionsPage.thisMonth')}
-                  {filter === 'thisYear' && t('gasTransactionsPage.thisYear')}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Search Table */}
-          <div className="mb-4">
-            <input
-              type="text"
-              value={tableSearch}
-              onChange={(e) => setTableSearch(e.target.value)}
-              placeholder={t('customerListPage.searchPlaceholder')}
-              className="w-full py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-
-          {/* Data List */}
-          {loading ? (
-            <div className="py-12 text-center text-gray-500 dark:text-gray-400">
-              {language === 'hi' ? 'लेनदेन लोड हो रहे हैं...' : 'Loading transactions...'}
-            </div>
-          ) : (
-            <DataTable
-              columns={columns}
-              data={displayedTransactions}
-              emptyMessage={t('gasTransactionsPage.noTransactions')}
-              pagination={true}
-              itemsPerPage={15}
-            />
-          )}
+        {/* Search Table */}
+        <div className="mb-6">
+          <input
+            type="text"
+            value={tableSearch}
+            onChange={(e) => setTableSearch(e.target.value)}
+            placeholder={t('customerListPage.searchPlaceholder')}
+            className="w-full py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:ring-primary-500 focus:border-primary-500 shadow-sm"
+          />
         </div>
+
+        {/* Data List */}
+        {loading ? (
+          <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+            {language === 'hi' ? 'लेनदेन लोड हो रहे हैं...' : 'Loading transactions...'}
+          </div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={displayedTransactions}
+            emptyMessage={t('gasTransactionsPage.noTransactions')}
+            pagination={true}
+            itemsPerPage={15}
+          />
+        )}
       </div>
     </div>
   );

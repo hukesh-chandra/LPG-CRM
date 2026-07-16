@@ -75,6 +75,7 @@ export interface Transaction {
   source?: 'delivery' | 'manual' | 'quick-sell';
   walkInName?: string;
   walkInMobile?: string;
+  walkInConsumerNo?: string;
 }
 
 export interface Delivery {

@@ -92,6 +92,7 @@ export const translations = {
         mark: 'Mark as Booked',
         unmark: 'Unmark Booking',
         markConfirmation: 'Are you sure you want to mark this booking and add it to pending deliveries?',
+        lastBookingDateFilter: 'Last Booking Date',
         filters: {
             allVillages: 'All Villages',
             allPanchayats: 'All Panchayats',
@@ -425,6 +426,7 @@ export const translations = {
             errorMsg: 'Failed to record gas transaction.',
             selectCustomer: 'Select Customer',
             customerType: 'Customer Type',
+            filterLabel: 'Date Range',
             allTime: 'All Time',
             today: 'Today',
             thisMonth: 'This Month',
@@ -527,6 +529,7 @@ export const translations = {
         mark: 'बुक किए गए के रूप में चिह्नित करें',
         unmark: 'बुकिंग अनमार्क करें',
         markConfirmation: 'क्या आप वाकई इस बुकिंग को चिह्नित करना चाहते हैं और इसे लंबित डिलीवरी में जोड़ना चाहते हैं?',
+        lastBookingDateFilter: 'अंतिम बुकिंग तिथि',
         filters: {
             allVillages: 'सभी गांव',
             allPanchayats: 'सभी पंचायत',
@@ -858,6 +861,7 @@ export const translations = {
             errorMsg: 'गैस लेनदेन दर्ज करने में विफल।',
             selectCustomer: 'ग्राहक चुनें',
             customerType: 'ग्राहक प्रकार',
+            filterLabel: 'तिथि सीमा',
             allTime: 'कुल समय',
             today: 'आज',
             thisMonth: 'इस महीने',

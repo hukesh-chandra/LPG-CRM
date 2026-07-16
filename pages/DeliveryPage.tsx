@@ -202,7 +202,7 @@ const DeliveryPage: React.FC = () => {
     }, []);
 
     const getBookingCycleDays = (agencyName?: string) => {
-        if (agencyName === 'M/S VINDHYAWASHNI BHARAT GAS' || agencyName === 'BINDHYABASINI BHARAT GAS (BIHAR SHARIF)') return 25;
+        if (agencyName === 'M/S VINDHYAWASHNI BHARAT GAS' || agencyName === 'BINDHYABASINI BHARAT GAS (BIHAR SHARIF)') return 30;
         return 45;
     };
 

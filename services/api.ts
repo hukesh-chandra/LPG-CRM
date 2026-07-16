@@ -26,6 +26,27 @@ const deliveriesCollection = db.collection('deliveries');
 const configCollection = db.collection('config');
 const documentsCollection = db.collection('documents');
 
+export const isCustomerUnbooked = (lastBookingDate: string | null | undefined, agencyName?: string): boolean => {
+    if (!lastBookingDate) return true;
+    const cycleDays = agencyName === 'M/S VINDHYAWASHNI BHARAT GAS' || agencyName === 'BINDHYABASINI BHARAT GAS (BIHAR SHARIF)' ? 30 : 45;
+    
+    const lastDate = new Date(lastBookingDate);
+    const eligibleDate = new Date(lastDate);
+    eligibleDate.setDate(eligibleDate.getDate() + cycleDays);
+    eligibleDate.setHours(1, 0, 0, 0);
+    
+    return new Date().getTime() >= eligibleDate.getTime();
+};
+
+export const getEligibleBookingDate = (lastBookingDate: string, agencyName?: string): Date => {
+    const lastDate = new Date(lastBookingDate);
+    const eligibleDate = new Date(lastDate);
+    const cycleDays = agencyName === 'M/S VINDHYAWASHNI BHARAT GAS' || agencyName === 'BINDHYABASINI BHARAT GAS (BIHAR SHARIF)' ? 30 : 45;
+    eligibleDate.setDate(eligibleDate.getDate() + cycleDays);
+    eligibleDate.setHours(1, 0, 0, 0);
+    return eligibleDate;
+};
+
 // Type-safe mappers to convert Firestore docs to our types with default values
 const customerFromDoc = (doc: any): Customer => {
     const data = doc.data() || {};
@@ -598,13 +619,8 @@ export const getDashboardStats = async (dateRange?: {start: Date, end: Date}) =>
     
     let pendingBookings = 0;
     allCustomers.forEach(customer => {
-        if (!customer.lastBookingDate) {
+        if (isCustomerUnbooked(customer.lastBookingDate, customer.agencyName)) {
             pendingBookings++;
-        } else {
-            const diffInDays = (new Date().getTime() - new Date(customer.lastBookingDate).getTime()) / (1000 * 3600 * 24);
-            if (diffInDays >= 45) {
-                pendingBookings++;
-            }
         }
     });
     

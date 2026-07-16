@@ -26,6 +26,7 @@ const GasTransactionsPage: React.FC = () => {
   
   const [walkInName, setWalkInName] = useState('');
   const [walkInMobile, setWalkInMobile] = useState('');
+  const [walkInConsumerNo, setWalkInConsumerNo] = useState('');
   
   const [transactionDate, setTransactionDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [price, setPrice] = useState('');
@@ -39,7 +40,8 @@ const GasTransactionsPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Table Filters State
-  const [tableFilter, setTableFilter] = useState<'all' | 'today' | 'thisMonth' | 'thisYear'>('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [tableSearch, setTableSearch] = useState('');
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -153,7 +155,8 @@ const GasTransactionsPage: React.FC = () => {
         date: finalDateStr,
         ...(customerType === 'manual' ? {
           walkInName: walkInName.trim(),
-          walkInMobile: walkInMobile.trim() || undefined
+          walkInMobile: walkInMobile.trim() || undefined,
+          walkInConsumerNo: walkInConsumerNo.trim() || undefined
         } : {})
       };
 
@@ -170,6 +173,7 @@ const GasTransactionsPage: React.FC = () => {
       setSelectedCustomer(null);
       setWalkInName('');
       setWalkInMobile('');
+      setWalkInConsumerNo('');
       setSearchQuery('');
       setTransactionDate(new Date().toISOString().split('T')[0]);
 
@@ -192,25 +196,19 @@ const GasTransactionsPage: React.FC = () => {
       return {
         ...tx,
         customerName: customer ? customer.name : (tx.walkInName || t('gasTransactionsPage.manualLabel')),
-        consumerNo: customer ? customer.consumerNo : '-',
+        consumerNo: customer ? customer.consumerNo : (tx.walkInConsumerNo || '-'),
         mobileNo: customer ? customer.mobileNo : (tx.walkInMobile || '-'),
         isRegistered: !!customer,
         amountDue: tx.price - tx.amountPaid
       };
     });
 
-    // Filter by Time
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
-    const thisMonthPrefix = now.toISOString().slice(0, 7); // YYYY-MM
-    const thisYearPrefix = now.toISOString().slice(0, 4); // YYYY
-
-    if (tableFilter === 'today') {
-      list = list.filter(tx => tx.date.startsWith(todayStr));
-    } else if (tableFilter === 'thisMonth') {
-      list = list.filter(tx => tx.date.startsWith(thisMonthPrefix));
-    } else if (tableFilter === 'thisYear') {
-      list = list.filter(tx => tx.date.startsWith(thisYearPrefix));
+    // Filter by Date Range
+    if (startDate) {
+      list = list.filter(tx => tx.date.slice(0, 10) >= startDate);
+    }
+    if (endDate) {
+      list = list.filter(tx => tx.date.slice(0, 10) <= endDate);
     }
 
     // Filter by search query
@@ -225,7 +223,7 @@ const GasTransactionsPage: React.FC = () => {
     }
 
     return list;
-  }, [transactions, customerMap, tableFilter, tableSearch, t]);
+  }, [transactions, customerMap, startDate, endDate, tableSearch, t]);
 
   // Table Columns
   const columns: Column<any>[] = [
@@ -464,7 +462,7 @@ const GasTransactionsPage: React.FC = () => {
               </div>
             ) : (
               /* Manual Input Fields side by side */
-              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Input
                   label={t('gasTransactionsPage.name')}
                   name="walkInName"
@@ -472,6 +470,13 @@ const GasTransactionsPage: React.FC = () => {
                   onChange={(e) => setWalkInName(e.target.value)}
                   placeholder={language === 'hi' ? 'जैसे: राहुल कुमार' : 'e.g. Rahul Kumar'}
                   required
+                />
+                <Input
+                  label={t('addCustomerPage.form.consumerNo') + ` (${language === 'hi' ? 'वैकल्पिक' : 'Optional'})`}
+                  name="walkInConsumerNo"
+                  value={walkInConsumerNo}
+                  onChange={(e) => setWalkInConsumerNo(e.target.value)}
+                  placeholder="Consumer No (optional)"
                 />
                 <div className="relative">
                   <Input
@@ -597,40 +602,63 @@ const GasTransactionsPage: React.FC = () => {
             {t('gasTransactionsPage.datewiseTransactions')}
           </h2>
 
-          {/* Time Filter Tabs (Using Standard Theme Button Group) */}
-          <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
-            <Button
-              type="button"
-              size="sm"
-              variant={tableFilter === 'all' ? 'primary' : 'secondary'}
-              onClick={() => setTableFilter('all')}
-            >
-              {t('gasTransactionsPage.allTime')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={tableFilter === 'today' ? 'primary' : 'secondary'}
-              onClick={() => setTableFilter('today')}
-            >
-              {t('gasTransactionsPage.today')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={tableFilter === 'thisMonth' ? 'primary' : 'secondary'}
-              onClick={() => setTableFilter('thisMonth')}
-            >
-              {t('gasTransactionsPage.thisMonth')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={tableFilter === 'thisYear' ? 'primary' : 'secondary'}
-              onClick={() => setTableFilter('thisYear')}
-            >
-              {t('gasTransactionsPage.thisYear')}
-            </Button>
+          {/* Custom Date Range Filter */}
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700 w-full md:w-auto">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('gasTransactionsPage.filterLabel') || 'Date Range'}:</span>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-primary-500 focus:border-primary-500"
+              />
+              <span className="text-gray-400 text-sm">to</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Button
+                type="button"
+                size="sm"
+                variant={!startDate && !endDate ? 'primary' : 'secondary'}
+                onClick={() => { setStartDate(''); setEndDate(''); }}
+              >
+                {t('gasTransactionsPage.allTime')}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={startDate === new Date().toISOString().split('T')[0] && endDate === new Date().toISOString().split('T')[0] ? 'primary' : 'secondary'}
+                onClick={() => {
+                  const today = new Date().toISOString().split('T')[0];
+                  setStartDate(today);
+                  setEndDate(today);
+                }}
+              >
+                {t('gasTransactionsPage.today')}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={startDate === new Date().toISOString().slice(0, 7) + '-01' && endDate === new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0] ? 'primary' : 'secondary'}
+                onClick={() => {
+                  const now = new Date();
+                  const year = now.getFullYear();
+                  const month = String(now.getMonth() + 1).padStart(2, '0');
+                  setStartDate(`${year}-${month}-01`);
+                  const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+                  setEndDate(`${year}-${month}-${String(lastDay).padStart(2, '0')}`);
+                }}
+              >
+                {t('gasTransactionsPage.thisMonth')}
+              </Button>
+            </div>
           </div>
         </div>
 

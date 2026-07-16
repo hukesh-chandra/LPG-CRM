@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { getCustomerById, getTransactionsByCustomerId, addTransaction, updateTransaction, uploadCustomerDocument, updateCustomer, getDocumentsByCustomerId } from '../services/api';
+import { getCustomerById, getTransactionsByCustomerId, addTransaction, updateTransaction, uploadCustomerDocument, updateCustomer, getDocumentsByCustomerId, isCustomerUnbooked, getEligibleBookingDate } from '../services/api';
 import { Customer, Transaction, NewTransaction, TransactionHistory, CustomerDocument, DocumentType } from '../types';
 import { GAS_COMPANIES, PANCHAYATS, PANCHAYAT_VILLAGE_MAP, CONNECTION_TYPES, AGENCIES, RELATION_TYPES } from '../constants';
 import DataTable, { Column } from '../components/DataTable';
@@ -25,11 +25,10 @@ const CustomerInfo: React.FC<{ customer: Customer, onRefresh?: () => void }> = (
         setCardStatus(customer.cardStatus || '');
     }, [customer.cardStatus]);
 
-    const isUnbooked = !customer.lastBookingDate || (new Date().getTime() - new Date(customer.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= 45;
+    const isUnbooked = isCustomerUnbooked(customer.lastBookingDate, customer.agencyName);
     let bookingStatusText = t('customerDetailPage.unbooked');
     if (!isUnbooked && customer.lastBookingDate) {
-        const nextDate = new Date(customer.lastBookingDate);
-        nextDate.setDate(nextDate.getDate() + 45);
+        const nextDate = getEligibleBookingDate(customer.lastBookingDate, customer.agencyName);
         bookingStatusText = t('customerDetailPage.bookedUntil', nextDate.toLocaleDateString(locale));
     }
 
@@ -304,7 +303,7 @@ const SaleFormModal: React.FC<{
                  savedTransaction = await addTransaction(customerId, formData);
                  import('../services/api').then(api => api.getCustomerById(customerId).then(customer => {
                         if (customer) {
-                            const isUnbooked = !customer.lastBookingDate || (new Date().getTime() - new Date(customer.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= 45;
+                            const isUnbooked = api.isCustomerUnbooked(customer.lastBookingDate, customer.agencyName);
                             if (isUnbooked) {
                                 if (window.confirm(t('dashboard.quickSell.unbookedAlert'))) {
                                     api.updateCustomer(customer.id, { lastBookingDate: new Date().toISOString() });

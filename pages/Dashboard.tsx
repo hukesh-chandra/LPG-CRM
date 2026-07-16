@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getDashboardStats, getCustomers, addTransaction } from '../services/api';
+import { getDashboardStats, getCustomers, addTransaction, isCustomerUnbooked } from '../services/api';
 import Card from '../components/Card';
 import DataTable, { Column } from '../components/DataTable';
 import { Transaction, Customer } from '../types';
@@ -98,7 +98,7 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
             await addTransaction(selectedCustomer?.id, transactionData);
             
             if (selectedCustomer) {
-                const isUnbooked = !selectedCustomer.lastBookingDate || (new Date().getTime() - new Date(selectedCustomer.lastBookingDate).getTime()) / (1000 * 3600 * 24) >= 45;
+                const isUnbooked = isCustomerUnbooked(selectedCustomer.lastBookingDate, selectedCustomer.agencyName);
                 if (isUnbooked) {
                     if (window.confirm(t('dashboard.quickSell.unbookedAlert'))) {
                         await import('../services/api').then(api => api.updateCustomer(selectedCustomer.id, { lastBookingDate: new Date().toISOString() }));

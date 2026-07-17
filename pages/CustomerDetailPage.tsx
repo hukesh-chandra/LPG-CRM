@@ -442,10 +442,60 @@ const DocumentUploader: React.FC<{
     }, [onUpload, t]);
     
     const printImage = (url: string) => {
-        const printWindow = window.open(url, '_blank');
-        printWindow?.addEventListener('load', () => {
-            printWindow?.print();
-        });
+        const isPdfUrl = url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('application%2fpdf');
+        
+        if (!isPdfUrl) {
+            // Print image using a same-origin hidden iframe (extremely reliable, avoids popup blockers and CORS window access limitations)
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = '0';
+            document.body.appendChild(iframe);
+
+            const iframeDoc = iframe.contentWindow?.document;
+            if (iframeDoc) {
+                iframeDoc.open();
+                iframeDoc.write(`
+                    <html>
+                        <body style="margin:0; display:flex; justify-content:center; align-items:center;">
+                            <img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain;" onload="window.print();" />
+                            <script>
+                                window.onafterprint = function() {
+                                    setTimeout(() => {
+                                        window.frameElement.remove();
+                                    }, 100);
+                                };
+                                setTimeout(() => {
+                                    try {
+                                        window.print();
+                                    } catch (e) {}
+                                }, 3000); // Fail-safe fallback if image load is slow
+                            </script>
+                        </body>
+                    </html>
+                `);
+                iframeDoc.close();
+            } else {
+                window.open(url, '_blank')?.print();
+            }
+        } else {
+            // PDF print - open in a new tab which allows the native PDF viewer's printing
+            const printWindow = window.open(url, '_blank');
+            if (!printWindow) {
+                alert('Please allow popups for this website');
+                return;
+            }
+            try {
+                printWindow.onload = () => {
+                    printWindow.print();
+                };
+            } catch (e) {
+                // Cross-origin might block this, which is fine since the native PDF viewer has a print button
+            }
+        }
     };
 
     const docUrl = document?.url;
@@ -635,7 +685,10 @@ const CustomerDetailPage: React.FC<CustomerDetailPageProps> = ({ id }) => {
             </html>
         `);
         printWindow.document.close();
-        printWindow.print();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+        }, 500);
     };
     
     const transactionColumns: Column<Transaction>[] = [

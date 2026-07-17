@@ -364,7 +364,10 @@ const DeliveryPage: React.FC = () => {
             </html>
         `);
         printWindow.document.close();
-        printWindow.print();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+        }, 500);
     };
 
     const handleDeleteDelivery = async (deliveryId: string) => {

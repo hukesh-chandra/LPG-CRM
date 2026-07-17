@@ -47,6 +47,11 @@ export const getEligibleBookingDate = (lastBookingDate: string, agencyName?: str
     return eligibleDate;
 };
 
+export const getBookingCycleDays = (agencyName?: string): number => {
+    if (agencyName === 'M/S VINDHYAWASHNI BHARAT GAS' || agencyName === 'BINDHYABASINI BHARAT GAS (BIHAR SHARIF)') return 30;
+    return 45;
+};
+
 // Type-safe mappers to convert Firestore docs to our types with default values
 const customerFromDoc = (doc: any): Customer => {
     const data = doc.data() || {};

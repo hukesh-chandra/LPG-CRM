@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getCustomers, updateCustomer, isCustomerUnbooked, getEligibleBookingDate } from '../services/api';
+import { getCustomers, updateCustomer, isCustomerUnbooked, getEligibleBookingDate, getBookingCycleDays } from '../services/api';
 import { Customer } from '../types';
 import DataTable, { Column } from '../components/DataTable';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -202,7 +202,10 @@ const BookingsPage: React.FC = () => {
             </html>
         `);
         printWindow.document.close();
-        printWindow.print();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+        }, 500);
     };
 
     const fetchData = async () => {

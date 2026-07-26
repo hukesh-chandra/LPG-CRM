@@ -420,12 +420,50 @@ export const getTransactionsByCustomerId = async (customerId: string): Promise<T
     return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
+export const completePendingDeliveriesForCustomer = async (customerId: string, completedAtDate?: string): Promise<void> => {
+    try {
+        const pendingSnapshot = await deliveriesCollection
+            .where('customerId', '==', customerId)
+            .where('completedAt', '==', null)
+            .get();
+            
+        if (!pendingSnapshot.empty) {
+            const batch = db.batch();
+            const dateToSet = completedAtDate || new Date().toISOString();
+            pendingSnapshot.docs.forEach((doc: any) => {
+                batch.update(doc.ref, { completedAt: dateToSet });
+            });
+            await batch.commit();
+        }
+    } catch (e) {
+        console.error("Failed to complete pending deliveries for customer", e);
+    }
+};
+
 export const addTransaction = async (customerId: string | undefined, transactionData: NewTransaction & { date?: string }): Promise<Transaction> => {
     const newTransactionRef = transactionsCollection.doc();
     const transactionDate = transactionData.date || new Date().toISOString();
 
-    if (customerId) {
-        const customerRef = customersCollection.doc(customerId);
+    let resolvedCustomerId = customerId;
+
+    // Fallback: If customerId wasn't passed directly, check if walkInConsumerNo or walkInMobile matches a registered customer
+    if (!resolvedCustomerId) {
+        if (transactionData.walkInConsumerNo && transactionData.walkInConsumerNo.trim() !== '') {
+            const matchQuery = await customersCollection.where('consumerNo', '==', transactionData.walkInConsumerNo.trim()).limit(1).get();
+            if (!matchQuery.empty) {
+                resolvedCustomerId = matchQuery.docs[0].id;
+            }
+        }
+        if (!resolvedCustomerId && transactionData.walkInMobile && transactionData.walkInMobile.trim() !== '') {
+            const matchQuery = await customersCollection.where('mobileNo', '==', transactionData.walkInMobile.trim()).limit(1).get();
+            if (!matchQuery.empty) {
+                resolvedCustomerId = matchQuery.docs[0].id;
+            }
+        }
+    }
+
+    if (resolvedCustomerId) {
+        const customerRef = customersCollection.doc(resolvedCustomerId);
         await db.runTransaction(async (t: any) => {
             const customerDoc = await t.get(customerRef);
             if (!customerDoc.exists) throw new Error("Customer not found");
@@ -437,13 +475,16 @@ export const addTransaction = async (customerId: string | undefined, transaction
             t.update(customerRef, { balance: newBalance });
             t.set(newTransactionRef, sanitize({
                 ...transactionData,
-                customerId,
+                customerId: resolvedCustomerId,
                 date: transactionDate,
                 source: transactionData.source || 'manual',
             }));
         });
 
-        return { id: newTransactionRef.id, customerId, date: transactionDate, source: transactionData.source || 'manual', ...transactionData };
+        // Automatically clear/complete any pending delivery for this customer
+        await completePendingDeliveriesForCustomer(resolvedCustomerId, transactionDate);
+
+        return { id: newTransactionRef.id, customerId: resolvedCustomerId, date: transactionDate, source: transactionData.source || 'manual', ...transactionData };
     } else {
         const data = sanitize({
             ...transactionData,
@@ -451,6 +492,26 @@ export const addTransaction = async (customerId: string | undefined, transaction
             source: transactionData.source || 'quick-sell',
         });
         await newTransactionRef.set(data);
+
+        // Also check if any pending delivery matches the walk-in mobile or walk-in name
+        if (transactionData.walkInMobile && transactionData.walkInMobile.trim() !== '') {
+            try {
+                const pendingByMobile = await deliveriesCollection
+                    .where('customerMobileNo', '==', transactionData.walkInMobile.trim())
+                    .where('completedAt', '==', null)
+                    .get();
+                if (!pendingByMobile.empty) {
+                    const batch = db.batch();
+                    pendingByMobile.docs.forEach((doc: any) => {
+                        batch.update(doc.ref, { completedAt: transactionDate });
+                    });
+                    await batch.commit();
+                }
+            } catch(e) {
+                console.error("Error clearing pending delivery by mobile", e);
+            }
+        }
+
         return { id: newTransactionRef.id, ...data } as Transaction;
     }
 };

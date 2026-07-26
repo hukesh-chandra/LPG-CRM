@@ -5,31 +5,138 @@ import DataTable, { Column } from '../components/DataTable';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CustomerInfo } from '../components/CustomerInfo';
 import Button from '../components/Button';
+import Modal from '../components/Modal';
 
-const BookingDateInput = React.memo(({ customer, defaultValue, onUpdate }: { customer: Customer, defaultValue: string, onUpdate: (c: Customer, val: string) => void }) => {
-    const [val, setVal] = useState(defaultValue);
-    useEffect(() => setVal(defaultValue), [defaultValue]);
-    
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setVal(e.target.value);
-    };
+const MarkBookingModal: React.FC<{
+    customer: Customer | null;
+    actionType: 'mark' | 'unmark';
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+}> = ({ customer, actionType, isOpen, onClose, onSuccess }) => {
+    const { t } = useLanguage();
+    const [bookingDate, setBookingDate] = useState('');
+    const [confirmInput, setConfirmInput] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleBlur = () => {
-        if (val !== defaultValue) {
-            onUpdate(customer, val);
+    useEffect(() => {
+        if (isOpen) {
+            setConfirmInput('');
+            const todayStr = new Date().toISOString().split('T')[0];
+            setBookingDate(todayStr);
+            setIsSubmitting(false);
+        }
+    }, [isOpen]);
+
+    if (!isOpen || !customer) return null;
+
+    const isMark = actionType === 'mark';
+    const isConfirmValid = confirmInput.trim().toLowerCase() === 'confirm';
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!isConfirmValid) return;
+
+        setIsSubmitting(true);
+        try {
+            if (isMark) {
+                const isoDate = bookingDate ? new Date(bookingDate).toISOString() : new Date().toISOString();
+                await updateCustomer(customer.id, { lastBookingDate: isoDate });
+                
+                const { addDelivery } = await import('../services/api');
+                try {
+                    await addDelivery(customer.id);
+                } catch (e) {
+                    console.error("Failed to add delivery", e);
+                }
+            } else {
+                await updateCustomer(customer.id, { lastBookingDate: null });
+            }
+
+            onSuccess();
+            onClose();
+        } catch (error) {
+            console.error("Failed to update booking", error);
+            alert("Error updating booking.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <input 
-            type="date"
-            value={val}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-transparent dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 max-w-[140px]"
-        />
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={isMark ? (t('bookingsPage.modal.titleMark') || 'Confirm Booking') : (t('bookingsPage.modal.titleUnmark') || 'Confirm Unmarking')}
+        >
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="bg-gray-50 dark:bg-gray-800/80 p-3 rounded-lg border border-gray-200 dark:border-gray-700 text-sm space-y-1">
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">{customer.name}</p>
+                    <p className="text-gray-600 dark:text-gray-400">Consumer No: <span className="font-mono font-medium">{customer.consumerNo || 'N/A'}</span></p>
+                    <p className="text-gray-600 dark:text-gray-400">Mobile: <span className="font-medium">{customer.mobileNo || 'N/A'}</span> | Agency: <span className="font-medium">{customer.agencyName}</span></p>
+                </div>
+
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                    {isMark 
+                        ? (t('bookingsPage.modal.descriptionMark') || 'Are you sure you want to mark this customer as booked? This will also add them to pending deliveries.')
+                        : (t('bookingsPage.modal.descriptionUnmark') || 'Are you sure you want to unmark this booking?')}
+                </p>
+
+                {isMark && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            {t('bookingsPage.modal.bookingDateLabel') || 'Booking Date (Optional)'}
+                        </label>
+                        <input
+                            type="date"
+                            value={bookingDate}
+                            onChange={(e) => setBookingDate(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                        />
+                    </div>
+                )}
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {t('bookingsPage.modal.confirmNotice') || 'Type "confirm" below to enable confirmation:'}
+                    </label>
+                    <input
+                        type="text"
+                        value={confirmInput}
+                        onChange={(e) => setConfirmInput(e.target.value)}
+                        placeholder={t('bookingsPage.modal.confirmPlaceholder') || 'Type confirm here'}
+                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none text-sm transition-colors ${
+                            confirmInput.trim() !== '' 
+                                ? (isConfirmValid ? 'border-green-500 focus:ring-2 focus:ring-green-500 bg-green-50/30 dark:bg-green-950/20' : 'border-red-400 focus:ring-2 focus:ring-red-400 bg-red-50/20 dark:bg-red-950/20')
+                                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+                        } text-gray-900 dark:text-white`}
+                    />
+                    {!isConfirmValid && confirmInput.length > 0 && (
+                        <p className="text-xs text-red-500 mt-1">{t('bookingsPage.modal.typeConfirmHelp') || 'You must type "confirm" to proceed.'}</p>
+                    )}
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <Button type="button" variant="secondary" onClick={onClose}>
+                        {t('buttons.cancel') || 'Cancel'}
+                    </Button>
+                    <Button
+                        type="submit"
+                        disabled={!isConfirmValid || isSubmitting}
+                        variant={isMark ? "primary" : "secondary"}
+                        className={!isConfirmValid ? "opacity-50 cursor-not-allowed" : ""}
+                    >
+                        {isSubmitting 
+                            ? "Processing..." 
+                            : isMark 
+                                ? (t('bookingsPage.modal.submitMark') || 'Confirm & Mark as Booked') 
+                                : (t('bookingsPage.modal.submitUnmark') || 'Confirm & Unmark')}
+                    </Button>
+                </div>
+            </form>
+        </Modal>
     );
-});
+};
 
 const BookingsPage: React.FC = () => {
     const { t, language } = useLanguage();
@@ -45,6 +152,17 @@ const BookingsPage: React.FC = () => {
     const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'consumerNo' | 'customerId'>('mobileNo');
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
+
+    // Modal state for marking/unmarking booking
+    const [modalState, setModalState] = useState<{
+        isOpen: boolean;
+        customer: Customer | null;
+        actionType: 'mark' | 'unmark';
+    }>({
+        isOpen: false,
+        customer: null,
+        actionType: 'mark'
+    });
 
     const uniquePanchayats = useMemo(() => Array.from(new Set(customers.map(c => c.panchayat === 'Other' ? c.otherPanchayat || 'Other' : c.panchayat).filter(Boolean))), [customers]);
     const uniqueVillages = useMemo(() => {
@@ -224,42 +342,16 @@ const BookingsPage: React.FC = () => {
         fetchData();
     }, []);
 
-    const toggleBooking = React.useCallback(async (customer: Customer) => {
-        const isUnbooked = isCustomerUnbooked(customer.lastBookingDate, customer.agencyName);
-        
-        if (isUnbooked) {
-            if (!window.confirm(t('bookingsPage.markConfirmation') || "Are you sure you want to mark this booking and add it to pending deliveries?")) {
-                return;
-            }
-        }
-        
-        const newDate = isUnbooked ? new Date().toISOString() : null;
-        try {
-            await updateCustomer(customer.id, { lastBookingDate: newDate });
-            if (isUnbooked) {
-                const { addDelivery } = await import('../services/api');
-                try {
-                    await addDelivery(customer.id);
-                } catch(e) {
-                    console.error("Failed to add delivery", e);
-                }
-            }
-            fetchData();
-        } catch (error) {
-            console.error("Failed to update booking status", error);
-            alert("Error updating booking status.");
-        }
-    }, [t]);
+    const openMarkModal = React.useCallback((customer: Customer, actionType: 'mark' | 'unmark') => {
+        setModalState({
+            isOpen: true,
+            customer,
+            actionType
+        });
+    }, []);
 
-    const updateBookingDate = React.useCallback(async (customer: Customer, dateString: string) => {
-        try {
-            const newDate = dateString ? new Date(dateString).toISOString() : null;
-            await updateCustomer(customer.id, { lastBookingDate: newDate });
-            fetchData();
-        } catch (error) {
-            console.error("Failed to update booking date", error);
-            alert("Error updating booking date.");
-        }
+    const closeMarkModal = React.useCallback(() => {
+        setModalState(prev => ({ ...prev, isOpen: false }));
     }, []);
 
     const filteredCustomers = useMemo(() => {
@@ -311,11 +403,9 @@ const BookingsPage: React.FC = () => {
         { 
             header: t('bookingsPage.headers.lastBookingDate'), 
             accessor: c => (
-                <BookingDateInput 
-                    customer={c} 
-                    defaultValue={c.lastBookingDate ? c.lastBookingDate.split('T')[0] : ''} 
-                    onUpdate={updateBookingDate} 
-                />
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {formatDate(c.lastBookingDate)}
+                </span>
             )
         },
         { 
@@ -332,18 +422,28 @@ const BookingsPage: React.FC = () => {
                 const isUnbooked = isCustomerUnbooked(c.lastBookingDate, c.agencyName);
                 return (
                     <div className="flex items-center space-x-2">
-                        <input 
-                            type="checkbox" 
-                            checked={!isUnbooked} 
-                            onChange={() => toggleBooking(c)} 
-                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer" 
-                        />
-                        <span className="text-sm font-medium">{isUnbooked ? t('bookingsPage.mark') : t('bookingsPage.unmark')}</span>
+                        {isUnbooked ? (
+                            <Button
+                                size="sm"
+                                variant="primary"
+                                onClick={() => openMarkModal(c, 'mark')}
+                            >
+                                {t('bookingsPage.mark') || 'Mark as Booked'}
+                            </Button>
+                        ) : (
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => openMarkModal(c, 'unmark')}
+                            >
+                                {t('bookingsPage.unmark') || 'Unmark Booking'}
+                            </Button>
+                        )}
                     </div>
                 );
             }
         }
-    ], [t, locale]);
+    ], [t, locale, openMarkModal]);
 
     if (loading) {
         return <div className="text-center p-8">{t('messages.loadingCustomers')}</div>;
@@ -522,6 +622,14 @@ const BookingsPage: React.FC = () => {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
                 <DataTable data={filteredCustomers} columns={columns} />
             </div>
+
+            <MarkBookingModal
+                isOpen={modalState.isOpen}
+                customer={modalState.customer}
+                actionType={modalState.actionType}
+                onClose={closeMarkModal}
+                onSuccess={fetchData}
+            />
         </div>
     );
 };

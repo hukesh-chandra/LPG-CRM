@@ -1085,6 +1085,47 @@ export const adjustStock = async (params: {
     });
 };
 
+export const recordAgencyStockSupply = async (params: {
+    toLocationId: string;
+    agencyName: string;
+    cylinderType: CylinderType;
+    filledCount: number;
+    emptyCount?: number;
+    note?: string;
+    createdByName?: string;
+}): Promise<void> => {
+    const locRef = stockLocationsCollection.doc(params.toLocationId);
+
+    await db.runTransaction(async (t: any) => {
+        const locDoc = await t.get(locRef);
+        if (!locDoc.exists) throw new Error("Stock location not found");
+
+        const data = locDoc.data();
+        const currentStock = (data.stock && data.stock[params.cylinderType]) || { filled: 0, empty: 0 };
+
+        const newFilled = currentStock.filled + (params.filledCount || 0);
+        const newEmpty = currentStock.empty + (params.emptyCount || 0);
+
+        t.update(locRef, {
+            [`stock.${params.cylinderType}`]: { filled: newFilled, empty: newEmpty },
+            updatedAt: new Date().toISOString(),
+        });
+
+        const txRef = stockTransactionsCollection.doc();
+        t.set(txRef, sanitize({
+            type: 'agency_supply',
+            agencyName: params.agencyName,
+            cylinderType: params.cylinderType,
+            toLocationId: params.toLocationId,
+            filledDelta: params.filledCount || 0,
+            emptyDelta: params.emptyCount || 0,
+            createdAt: new Date().toISOString(),
+            createdByName: params.createdByName || 'Admin',
+            note: params.note || `Agency Supply from ${params.agencyName} to ${data.name}: Received ${params.filledCount} filled cylinders`,
+        }));
+    });
+};
+
 export const getDashboardStats = async (dateRange?: {start: Date, end: Date}) => {
     const activeCustomersSnapshot = await customersCollection.where('isDeleted', '==', false).get();
     const allCustomers = activeCustomersSnapshot.docs.map(customerFromDoc);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getDashboardStats, getCustomers, addTransaction, isCustomerUnbooked, getEligibleBookingDate, getBookingCycleDays, listStockLocations, listStockTransactions } from '../services/api';
+import { getDashboardStats, getCustomers, addTransaction, isCustomerUnbooked, getEligibleBookingDate, getBookingCycleDays, listStockLocations, listStockTransactions, getDeliveries } from '../services/api';
 import Card from '../components/Card';
 import DataTable, { Column } from '../components/DataTable';
 import { Transaction, Customer, StockLocation, StockTransaction, CYLINDER_TYPE_LABELS, DOMESTIC_14KG_CYLINDERS } from '../types';
@@ -27,6 +27,8 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
     const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'relationName' | 'consumerNo' | 'customerId'>('mobileNo');
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [showDropdown, setShowDropdown] = useState(false);
+    const [onlyPendingDelivery, setOnlyPendingDelivery] = useState(false);
+    const [pendingCustomerIds, setPendingCustomerIds] = useState<Set<string>>(new Set());
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const [formData, setFormData] = useState({
@@ -39,6 +41,14 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
 
     useEffect(() => {
         getCustomers().then(setCustomers);
+        getDeliveries().then(deliveries => {
+            const pendingSet = new Set(
+                deliveries
+                    .filter(d => !d.completedAt)
+                    .map(d => d.customerId)
+            );
+            setPendingCustomerIds(pendingSet);
+        }).catch(err => console.error("Error fetching deliveries for quick sell filter:", err));
     }, []);
 
     useEffect(() => {
@@ -52,9 +62,13 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
     }, []);
 
     const filteredCustomers = React.useMemo(() => {
-        if (!searchQuery.trim()) return customers.slice(0, 10);
+        let pool = customers;
+        if (onlyPendingDelivery) {
+            pool = pool.filter(c => pendingCustomerIds.has(c.id));
+        }
+        if (!searchQuery.trim()) return pool.slice(0, 10);
         const lowerSearch = searchQuery.trim().toLowerCase();
-        return customers.filter(c => {
+        return pool.filter(c => {
             switch (searchBy) {
                 case 'mobileNo': return c.mobileNo && c.mobileNo.includes(searchQuery.trim());
                 case 'name': return (c.name && c.name.toLowerCase().includes(lowerSearch)) || (c.relationName && c.relationName.toLowerCase().includes(lowerSearch));
@@ -64,7 +78,7 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
                 default: return true;
             }
         }).slice(0, 10);
-    }, [customers, searchQuery, searchBy]);
+    }, [customers, searchQuery, searchBy, onlyPendingDelivery, pendingCustomerIds]);
 
     const handleCustomerSelect = (customer: Customer) => {
         setSelectedCustomer(customer);
@@ -158,9 +172,20 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="relative" ref={dropdownRef}>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {t('dashboard.quickSell.searchCustomer')}
-                        </label>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {t('dashboard.quickSell.searchCustomer')}
+                            </label>
+                            <label className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={onlyPendingDelivery}
+                                    onChange={(e) => setOnlyPendingDelivery(e.target.checked)}
+                                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
+                                />
+                                <span>Only pending deliveries ({pendingCustomerIds.size})</span>
+                            </label>
+                        </div>
                         <div className="flex gap-2">
                             <select 
                                 value={searchBy}

@@ -97,9 +97,21 @@ export interface StockLocation {
   updatedAt?: string;
 }
 
+export type StockTransactionType =
+  | 'transfer'
+  | 'delivery'
+  | 'direct_sale'
+  | 'adjustment'
+  | 'agency_supply'
+  | 'load_out'
+  | 'load_in'
+  | 'delivery_completion'
+  | 'manual_adjustment';
+
 export interface StockTransaction {
   id: string;
-  type: 'transfer' | 'delivery' | 'direct_sale' | 'adjustment';
+  type: StockTransactionType;
+  agencyName?: string;
   cylinderType: CylinderType;
   fromLocationId?: string;
   toLocationId?: string;

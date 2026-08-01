@@ -149,7 +149,7 @@ const BookingsPage: React.FC = () => {
     const [agencyFilter, setAgencyFilter] = useState<string>('all');
     const [kycFilter, setKycFilter] = useState<'all' | 'completed' | 'pending'>('all');
     const [searchTerm, setSearchTerm] = useState('');
-    const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'consumerNo' | 'customerId'>('mobileNo');
+    const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'relationName' | 'consumerNo' | 'customerId'>('mobileNo');
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
 
@@ -362,7 +362,8 @@ const BookingsPage: React.FC = () => {
                 let matchesSearch = false;
                 switch (searchBy) {
                     case 'mobileNo': matchesSearch = !!(c.mobileNo && c.mobileNo.includes(searchTerm.trim())); break;
-                    case 'name': matchesSearch = !!(c.name && c.name.toLowerCase().includes(searchLower)); break;
+                    case 'name': matchesSearch = !!(c.name && c.name.toLowerCase().includes(searchLower)) || !!(c.relationName && c.relationName.toLowerCase().includes(searchLower)); break;
+                    case 'relationName': matchesSearch = !!(c.relationName && c.relationName.toLowerCase().includes(searchLower)); break;
                     case 'consumerNo': matchesSearch = !!(c.consumerNo && c.consumerNo.toLowerCase().includes(searchLower)); break;
                     case 'customerId': matchesSearch = !!(c.customerId && c.customerId.toLowerCase().includes(searchLower)); break;
                 }
@@ -470,6 +471,7 @@ const BookingsPage: React.FC = () => {
                         >
                             <option value="mobileNo">{t('addCustomerPage.form.mobileNo')}</option>
                             <option value="name">{t('addCustomerPage.form.name')}</option>
+                            <option value="relationName">{t('addCustomerPage.form.relationName')}</option>
                             <option value="consumerNo">{t('addCustomerPage.form.consumerNo')}</option>
                             <option value="customerId">{t('addCustomerPage.form.customerId')}</option>
                         </select>

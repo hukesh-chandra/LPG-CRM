@@ -13,7 +13,7 @@ const AdminPage: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'consumerNo' | 'customerId'>('mobileNo');
+    const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'relationName' | 'consumerNo' | 'customerId'>('mobileNo');
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -68,7 +68,8 @@ const AdminPage: React.FC = () => {
         return customers.filter(c => {
             switch (searchBy) {
                 case 'mobileNo': return c.mobileNo && c.mobileNo.includes(searchTerm.trim());
-                case 'name': return c.name && c.name.toLowerCase().includes(lowerSearch);
+                case 'name': return (c.name && c.name.toLowerCase().includes(lowerSearch)) || (c.relationName && c.relationName.toLowerCase().includes(lowerSearch));
+                case 'relationName': return c.relationName && c.relationName.toLowerCase().includes(lowerSearch);
                 case 'consumerNo': return c.consumerNo && c.consumerNo.toLowerCase().includes(lowerSearch);
                 case 'customerId': return c.customerId && c.customerId.toLowerCase().includes(lowerSearch);
                 default: return true;
@@ -151,6 +152,7 @@ const AdminPage: React.FC = () => {
                             >
                                 <option value="mobileNo">{t('addCustomerPage.form.mobileNo')}</option>
                                 <option value="name">{t('addCustomerPage.form.name')}</option>
+                                <option value="relationName">{t('addCustomerPage.form.relationName')}</option>
                                 <option value="consumerNo">{t('addCustomerPage.form.consumerNo')}</option>
                                 <option value="customerId">{t('addCustomerPage.form.customerId')}</option>
                             </select>

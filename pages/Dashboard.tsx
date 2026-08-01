@@ -24,7 +24,7 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
     const { t } = useLanguage();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'consumerNo' | 'customerId'>('mobileNo');
+    const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'relationName' | 'consumerNo' | 'customerId'>('mobileNo');
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -56,7 +56,8 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
         return customers.filter(c => {
             switch (searchBy) {
                 case 'mobileNo': return c.mobileNo && c.mobileNo.includes(searchQuery.trim());
-                case 'name': return c.name && c.name.toLowerCase().includes(lowerSearch);
+                case 'name': return (c.name && c.name.toLowerCase().includes(lowerSearch)) || (c.relationName && c.relationName.toLowerCase().includes(lowerSearch));
+                case 'relationName': return c.relationName && c.relationName.toLowerCase().includes(lowerSearch);
                 case 'consumerNo': return c.consumerNo && c.consumerNo.toLowerCase().includes(lowerSearch);
                 case 'customerId': return c.customerId && c.customerId.toLowerCase().includes(lowerSearch);
                 default: return true;
@@ -66,7 +67,8 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
 
     const handleCustomerSelect = (customer: Customer) => {
         setSelectedCustomer(customer);
-        setSearchQuery(`${customer.name} (${customer.consumerNo})`);
+        const rel = customer.relationName ? ` (${customer.relationType || 'S/O'} ${customer.relationName})` : '';
+        setSearchQuery(`${customer.name}${rel} - ${customer.consumerNo}`);
         setShowDropdown(false);
     };
 
@@ -142,6 +144,7 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
                             >
                                 <option value="mobileNo">{t('addCustomerPage.form.mobileNo')}</option>
                                 <option value="name">{t('addCustomerPage.form.name')}</option>
+                                <option value="relationName">{t('addCustomerPage.form.relationName')}</option>
                                 <option value="consumerNo">{t('addCustomerPage.form.consumerNo')}</option>
                                 <option value="customerId">{t('addCustomerPage.form.customerId')}</option>
                             </select>

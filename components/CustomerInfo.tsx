@@ -50,7 +50,7 @@ export const CustomerInfo: React.FC<{ customer: Customer }> = ({ customer }) => 
     return (
         <div>
             <div className="font-semibold text-gray-900 dark:text-white">{customer.name}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-xs font-semibold text-blue-700 dark:text-blue-300">
                 {t(`enums.relationType.${customer.relationType}` as any) || customer.relationType} {customer.relationName}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">

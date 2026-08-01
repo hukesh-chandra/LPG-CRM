@@ -68,7 +68,7 @@ const CustomerListPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'consumerNo' | 'customerId'>('mobileNo');
+  const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'relationName' | 'consumerNo' | 'customerId'>('mobileNo');
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [filters, setFilters] = useState({
     panchayat: '',
@@ -238,7 +238,8 @@ const CustomerListPage: React.FC = () => {
          const lowerTerm = searchTerm.trim().toLowerCase();
          switch (searchBy) {
             case 'mobileNo': return c.mobileNo && c.mobileNo.includes(searchTerm.trim());
-            case 'name': return c.name && c.name.toLowerCase().includes(lowerTerm);
+            case 'name': return (c.name && c.name.toLowerCase().includes(lowerTerm)) || (c.relationName && c.relationName.toLowerCase().includes(lowerTerm));
+            case 'relationName': return c.relationName && c.relationName.toLowerCase().includes(lowerTerm);
             case 'consumerNo': return c.consumerNo && c.consumerNo.toLowerCase().includes(lowerTerm);
             case 'customerId': return c.customerId && c.customerId.toLowerCase().includes(lowerTerm);
             default: return true;
@@ -248,7 +249,7 @@ const CustomerListPage: React.FC = () => {
       .filter(c => filters.village ? c.village === filters.village : true)
       .filter(c => filters.connectionType ? c.connectionType === filters.connectionType : true)
       .filter(c => filters.agencyName ? c.agencyName === filters.agencyName : true);
-  }, [customers, searchTerm, filters]);
+  }, [customers, searchTerm, searchBy, filters]);
 
   const columns: Column<Customer>[] = useMemo(() => [
     { header: t('customerListPage.headers.name'), accessor: (c) => <CustomerInfo customer={c} /> },
@@ -288,6 +289,7 @@ const CustomerListPage: React.FC = () => {
             >
                 <option value="mobileNo">{t('addCustomerPage.form.mobileNo')}</option>
                 <option value="name">{t('addCustomerPage.form.name')}</option>
+                <option value="relationName">{t('addCustomerPage.form.relationName')}</option>
                 <option value="consumerNo">{t('addCustomerPage.form.consumerNo')}</option>
                 <option value="customerId">{t('addCustomerPage.form.customerId')}</option>
             </select>

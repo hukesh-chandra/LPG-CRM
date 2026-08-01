@@ -18,7 +18,7 @@ const AddDeliveryModal: React.FC<{
     const { t } = useLanguage();
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
-    const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'consumerNo' | 'customerId'>('mobileNo');
+    const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'relationName' | 'consumerNo' | 'customerId'>('mobileNo');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const filteredCustomers = useMemo(() => {
@@ -28,7 +28,8 @@ const AddDeliveryModal: React.FC<{
             .filter(c => {
                 switch (searchBy) {
                     case 'mobileNo': return c.mobileNo && c.mobileNo.includes(searchTerm.trim());
-                    case 'name': return c.name && c.name.toLowerCase().includes(lowerSearch);
+                    case 'name': return (c.name && c.name.toLowerCase().includes(lowerSearch)) || (c.relationName && c.relationName.toLowerCase().includes(lowerSearch));
+                    case 'relationName': return c.relationName && c.relationName.toLowerCase().includes(lowerSearch);
                     case 'consumerNo': return c.consumerNo && c.consumerNo.toLowerCase().includes(lowerSearch);
                     case 'customerId': return c.customerId && c.customerId.toLowerCase().includes(lowerSearch);
                     default: return true;
@@ -69,6 +70,7 @@ const AddDeliveryModal: React.FC<{
                     >
                         <option value="mobileNo">{t('addCustomerPage.form.mobileNo')}</option>
                         <option value="name">{t('addCustomerPage.form.name')}</option>
+                        <option value="relationName">{t('addCustomerPage.form.relationName')}</option>
                         <option value="consumerNo">{t('addCustomerPage.form.consumerNo')}</option>
                         <option value="customerId">{t('addCustomerPage.form.customerId')}</option>
                     </select>
@@ -84,7 +86,7 @@ const AddDeliveryModal: React.FC<{
                     />
                 </div>
                 {searchTerm && (
-                    <div className="mt-2 border border-gray-300 rounded-md max-h-40 overflow-y-auto">
+                    <div className="mt-2 border border-gray-300 dark:border-gray-600 rounded-md max-h-52 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
                         {filteredCustomers.length > 0 ? (
                             filteredCustomers.map(c => (
                                 <button
@@ -92,15 +94,22 @@ const AddDeliveryModal: React.FC<{
                                     key={c.id}
                                     onClick={() => {
                                         setSelectedCustomerId(c.id);
-                                        setSearchTerm(c.name);
+                                        const rel = c.relationName ? ` (${c.relationType || 'S/O'} ${c.relationName})` : '';
+                                        setSearchTerm(`${c.name}${rel}`);
                                     }}
-                                    className={`w-full text-left p-2 hover:bg-primary-100 dark:hover:bg-gray-700 ${selectedCustomerId === c.id ? 'bg-primary-100 dark:bg-gray-700' : ''}`}
+                                    className={`w-full text-left p-2.5 hover:bg-primary-50 dark:hover:bg-gray-700 transition-colors ${selectedCustomerId === c.id ? 'bg-primary-100 dark:bg-gray-700' : ''}`}
                                 >
-                                    {c.name} ({c.customerId})
+                                    <div className="font-semibold text-gray-900 dark:text-white">{c.name}</div>
+                                    <div className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                                        {t(`enums.relationType.${c.relationType}` as any) || c.relationType || 'S/O'} {c.relationName}
+                                    </div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                        Mob: {c.mobileNo || 'N/A'} &bull; Consumer No: {c.consumerNo || 'N/A'} &bull; Village: {c.village === 'Other' ? c.otherVillage : (t(`enums.villages.${c.village}` as any) || c.village)}
+                                    </div>
                                 </button>
                             ))
                         ) : (
-                            <div className="p-2 text-gray-500">{t('deliveryPage.addModal.noCustomerFound')}</div>
+                            <div className="p-3 text-sm text-gray-500 text-center">{t('deliveryPage.addModal.noCustomerFound')}</div>
                         )}
                     </div>
                 )}

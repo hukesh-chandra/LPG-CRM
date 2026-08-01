@@ -20,7 +20,7 @@ const GasTransactionsPage: React.FC = () => {
   // Form State
   const [customerType, setCustomerType] = useState<'registered' | 'manual'>('registered');
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchBy, setSearchBy] = useState<'consumerNo' | 'name' | 'mobileNo' | 'customerId'>('consumerNo');
+  const [searchBy, setSearchBy] = useState<'consumerNo' | 'name' | 'relationName' | 'mobileNo' | 'customerId'>('consumerNo');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   
@@ -86,7 +86,9 @@ const GasTransactionsPage: React.FC = () => {
       if (searchBy === 'consumerNo') {
         return customer.consumerNo?.toLowerCase().includes(lowerQuery);
       } else if (searchBy === 'name') {
-        return customer.name?.toLowerCase().includes(lowerQuery);
+        return customer.name?.toLowerCase().includes(lowerQuery) || customer.relationName?.toLowerCase().includes(lowerQuery);
+      } else if (searchBy === 'relationName') {
+        return customer.relationName?.toLowerCase().includes(lowerQuery);
       } else if (searchBy === 'mobileNo') {
         return customer.mobileNo?.toLowerCase().includes(lowerQuery);
       } else if (searchBy === 'customerId') {
@@ -379,6 +381,7 @@ const GasTransactionsPage: React.FC = () => {
                       >
                         <option value="consumerNo">{t('addCustomerPage.form.consumerNo')}</option>
                         <option value="name">{t('addCustomerPage.form.name')}</option>
+                        <option value="relationName">{t('addCustomerPage.form.relationName')}</option>
                         <option value="mobileNo">{t('addCustomerPage.form.mobileNo')}</option>
                         <option value="customerId">{t('addCustomerPage.form.customerId')}</option>
                       </select>
@@ -411,8 +414,11 @@ const GasTransactionsPage: React.FC = () => {
                               className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 transition-colors"
                             >
                               <div className="font-semibold text-sm">{customer.name}</div>
+                              <div className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                                {t(`enums.relationType.${customer.relationType}` as any) || customer.relationType || 'S/O'} {customer.relationName}
+                              </div>
                               <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                Mob: {customer.mobileNo} &bull; {customer.village === 'Other' ? customer.otherVillage : t(`enums.villages.${customer.village}`)} &bull; {t('addCustomerPage.form.consumerNo')}: {customer.consumerNo}
+                                Mob: {customer.mobileNo || 'N/A'} &bull; {customer.village === 'Other' ? customer.otherVillage : t(`enums.villages.${customer.village}`)} &bull; {t('addCustomerPage.form.consumerNo')}: {customer.consumerNo}
                               </div>
                             </button>
                           ))

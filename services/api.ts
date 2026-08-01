@@ -1,5 +1,5 @@
 // Fix: Import the TransactionHistory type from ../types
-import { Customer, Transaction, ConnectionType, NewCustomer, NewTransaction, UpdateTransactionPayload, Delivery, TransactionHistory, CustomerDocument, DocumentType } from '../types';
+import { Customer, Transaction, ConnectionType, NewCustomer, NewTransaction, UpdateTransactionPayload, Delivery, TransactionHistory, CustomerDocument, DocumentType, AppUser, StockLocation, StockTransaction, CylinderType, PaymentMethod } from '../types';
 
 // IMPORTANT: Paste your Firebase project configuration here.
 // The application will not work until you replace these placeholder values.
@@ -15,7 +15,6 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-// This will throw an error if the config is not replaced, which is expected.
 (window as any).firebase.initializeApp(firebaseConfig);
 const db = (window as any).firebase.firestore();
 const storage = (window as any).firebase.storage();
@@ -25,6 +24,9 @@ const transactionsCollection = db.collection('transactions');
 const deliveriesCollection = db.collection('deliveries');
 const configCollection = db.collection('config');
 const documentsCollection = db.collection('documents');
+const appUsersCollection = db.collection('app_users');
+const stockLocationsCollection = db.collection('stock_locations');
+const stockTransactionsCollection = db.collection('stock_transactions');
 
 export const isCustomerUnbooked = (lastBookingDate: string | null | undefined, agencyName?: string): boolean => {
     if (!lastBookingDate) return true;
@@ -89,9 +91,11 @@ const transactionFromDoc = (doc: any): Transaction => {
         customerId: data.customerId || '',
         walkInName: data.walkInName || '',
         walkInMobile: data.walkInMobile || '',
+        walkInConsumerNo: data.walkInConsumerNo || '',
         date: data.date || new Date().toISOString(),
         price: data.price || 0,
         amountPaid: data.amountPaid || 0,
+        paymentMethod: data.paymentMethod || 'cash',
         description: data.description || '',
         gasCompanyGiven: data.gasCompanyGiven || '',
         gasCompanyReceived: data.gasCompanyReceived || '',
@@ -102,6 +106,13 @@ const transactionFromDoc = (doc: any): Transaction => {
 
 const deliveryFromDoc = (doc: any): Delivery => {
     const data = doc.data() || {};
+    const completedAt = data.completedAt || null;
+    const assignedTo = data.assignedTo || null;
+    let status = data.status;
+    if (!status) {
+        status = completedAt ? 'completed' : assignedTo ? 'out_for_delivery' : 'pending';
+    }
+
     return {
         id: doc.id,
         customerId: data.customerId || '',
@@ -111,8 +122,92 @@ const deliveryFromDoc = (doc: any): Delivery => {
         customerMobileNo: data.customerMobileNo || '',
         customerAddress: data.customerAddress || '',
         requestedAt: data.requestedAt || new Date().toISOString(),
-        completedAt: data.completedAt || null,
+        completedAt,
+        status,
+        assignedTo,
+        assignedVehicleId: data.assignedVehicleId || null,
+        assignedAt: data.assignedAt || null,
+        cylinderType: data.cylinderType || null,
+        filledHandedOver: data.filledHandedOver || 0,
+        emptiesReceived: data.emptiesReceived || 0,
+        completedBy: data.completedBy || null,
+        undeliveredReason: data.undeliveredReason || null,
+        undeliveredAt: data.undeliveredAt || null,
+        undeliveredBy: data.undeliveredBy || null,
     };
+};
+
+export const loginAdminUser = async (email: string, password: string): Promise<AppUser> => {
+    const auth = (window as any).firebase?.auth();
+    if (!auth) {
+        throw new Error("Firebase Auth is not available. Check configuration.");
+    }
+
+    // Try email/password login via Firebase Auth
+    const cred = await auth.signInWithEmailAndPassword(email, password);
+    const user = cred.user;
+    if (!user) throw new Error("Authentication failed");
+
+    // Fetch user doc from Firestore 'app_users' collection
+    const userDoc = await appUsersCollection.doc(user.uid).get();
+    if (!userDoc.exists) {
+        await auth.signOut();
+        throw new Error("No user profile found in database (app_users). Admin must assign role.");
+    }
+
+    const userData = userDoc.data() || {};
+    if (userData.role !== 'admin') {
+        await auth.signOut();
+        throw new Error(`Access denied: Account role is '${userData.role || 'user'}'. Web console requires Admin role.`);
+    }
+
+    if (userData.active === false) {
+        await auth.signOut();
+        throw new Error("This admin account has been deactivated.");
+    }
+
+    return {
+        uid: user.uid,
+        email: user.email || email,
+        name: userData.name || 'Admin',
+        mobileNo: userData.mobileNo || '',
+        role: 'admin',
+        active: true,
+        createdAt: userData.createdAt,
+    };
+};
+
+export const logoutAdminUser = async (): Promise<void> => {
+    const auth = (window as any).firebase?.auth();
+    if (auth) {
+        await auth.signOut();
+    }
+};
+
+export const getCurrentAuthAppUser = async (): Promise<AppUser | null> => {
+    const auth = (window as any).firebase?.auth();
+    if (!auth || !auth.currentUser) return null;
+
+    try {
+        const uid = auth.currentUser.uid;
+        const userDoc = await appUsersCollection.doc(uid).get();
+        if (userDoc.exists) {
+            const data = userDoc.data();
+            if (data.role === 'admin' && data.active !== false) {
+                return {
+                    uid,
+                    email: auth.currentUser.email || '',
+                    name: data.name || 'Admin',
+                    mobileNo: data.mobileNo || '',
+                    role: 'admin',
+                    active: true,
+                };
+            }
+        }
+    } catch (e) {
+        console.error("Error fetching current auth app user:", e);
+    }
+    return null;
 };
 
 const documentFromDoc = (doc: any): CustomerDocument => {
@@ -634,10 +729,11 @@ export const completeDelivery = async (deliveryId: string, transactionData: NewT
         const newTransactionRef = transactionsCollection.doc();
         const newTransactionData: Omit<Transaction, 'id'> = {
             ...transactionData,
-            description: `Delivery: ${transactionData.description}`,
+            description: `Delivery: ${transactionData.description || 'Refill'}`,
             source: 'delivery',
             customerId,
             date: new Date().toISOString(),
+            paymentMethod: transactionData.paymentMethod || 'cash',
         };
         
         const currentBalance = customerDoc.data().balance || 0;
@@ -645,9 +741,258 @@ export const completeDelivery = async (deliveryId: string, transactionData: NewT
         const newBalance = currentBalance + balanceChange;
         
         t.update(customerRef, { balance: newBalance });
-        t.set(newTransactionRef, newTransactionData);
+        t.set(newTransactionRef, sanitize(newTransactionData));
 
-        t.update(deliveryRef, { completedAt: new Date().toISOString() });
+        t.update(deliveryRef, {
+            completedAt: new Date().toISOString(),
+            status: 'completed',
+        });
+    });
+};
+
+// --- DELIVERY ASSIGNMENT & DELIVERY BOY HELPERS ---
+export const listDeliveryBoys = async (): Promise<AppUser[]> => {
+    try {
+        const snapshot = await appUsersCollection.get();
+        return snapshot.docs
+            .map((doc: any) => ({ uid: doc.id, ...doc.data() } as AppUser))
+            .filter((user: AppUser) => user.role === 'delivery_boy' && user.active !== false);
+    } catch (e) {
+        console.error("Error listing delivery boys:", e);
+        return [];
+    }
+};
+
+export const listAllAppUsers = async (): Promise<AppUser[]> => {
+    try {
+        const snapshot = await appUsersCollection.get();
+        return snapshot.docs.map((doc: any) => ({ uid: doc.id, ...doc.data() } as AppUser));
+    } catch (e) {
+        console.error("Error listing app users:", e);
+        return [];
+    }
+};
+
+export const assignDelivery = async (params: {
+    deliveryId: string;
+    assignedTo: string;
+    assignedVehicleId: string;
+    cylinderType: CylinderType;
+}): Promise<void> => {
+    const deliveryRef = deliveriesCollection.doc(params.deliveryId);
+    await deliveryRef.update({
+        status: 'out_for_delivery',
+        assignedTo: params.assignedTo,
+        assignedVehicleId: params.assignedVehicleId,
+        cylinderType: params.cylinderType,
+        assignedAt: new Date().toISOString(),
+    });
+};
+
+export const cancelDelivery = async (deliveryId: string): Promise<void> => {
+    const deliveryRef = deliveriesCollection.doc(deliveryId);
+    await deliveryRef.update({
+        status: 'cancelled',
+        completedAt: new Date().toISOString(),
+    });
+};
+
+// --- STOCK & INVENTORY MANAGEMENT HELPERS ---
+export const seedDefaultStockLocations = async (): Promise<StockLocation[]> => {
+    const defaultLocations: StockLocation[] = [
+        {
+            id: 'main_godown',
+            name: 'Main Godown',
+            type: 'godown',
+            stock: {
+                '14KG_HP': { filled: 120, empty: 45 },
+                '14KG_IN': { filled: 80, empty: 30 },
+                '14KG_BH': { filled: 60, empty: 20 },
+                '5KG': { filled: 25, empty: 10 },
+                'COMMERCIAL': { filled: 15, empty: 5 },
+            },
+            updatedAt: new Date().toISOString(),
+        },
+        {
+            id: 'counter',
+            name: 'Showroom Counter',
+            type: 'godown',
+            stock: {
+                '14KG_HP': { filled: 15, empty: 10 },
+                '14KG_IN': { filled: 10, empty: 5 },
+                '14KG_BH': { filled: 10, empty: 5 },
+                '5KG': { filled: 8, empty: 2 },
+                'COMMERCIAL': { filled: 5, empty: 2 },
+            },
+            updatedAt: new Date().toISOString(),
+        },
+        {
+            id: 'vehicle_1',
+            name: 'Delivery Vehicle BR01-1234',
+            type: 'vehicle',
+            stock: {
+                '14KG_HP': { filled: 20, empty: 5 },
+                '14KG_IN': { filled: 15, empty: 3 },
+                '14KG_BH': { filled: 10, empty: 2 },
+                '5KG': { filled: 4, empty: 1 },
+                'COMMERCIAL': { filled: 2, empty: 0 },
+            },
+            updatedAt: new Date().toISOString(),
+        },
+        {
+            id: 'vehicle_2',
+            name: 'Delivery Vehicle BR01-5678',
+            type: 'vehicle',
+            stock: {
+                '14KG_HP': { filled: 18, empty: 4 },
+                '14KG_IN': { filled: 12, empty: 2 },
+                '14KG_BH': { filled: 8, empty: 1 },
+                '5KG': { filled: 2, empty: 0 },
+                'COMMERCIAL': { filled: 1, empty: 0 },
+            },
+            updatedAt: new Date().toISOString(),
+        },
+    ];
+
+    const batch = db.batch();
+    for (const loc of defaultLocations) {
+        batch.set(stockLocationsCollection.doc(loc.id), loc);
+    }
+    await batch.commit();
+    return defaultLocations;
+};
+
+export const listStockLocations = async (): Promise<StockLocation[]> => {
+    try {
+        const snapshot = await stockLocationsCollection.get();
+        if (snapshot.empty) {
+            return await seedDefaultStockLocations();
+        }
+        return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as StockLocation));
+    } catch (e) {
+        console.error("Error listing stock locations:", e);
+        return [];
+    }
+};
+
+export const listStockTransactions = async (limitCount = 50): Promise<StockTransaction[]> => {
+    try {
+        const snapshot = await stockTransactionsCollection.orderBy('createdAt', 'desc').limit(limitCount).get();
+        return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as StockTransaction));
+    } catch (e) {
+        try {
+            const snapshot = await stockTransactionsCollection.get();
+            const items = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as StockTransaction));
+            return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, limitCount);
+        } catch (err) {
+            console.error("Error listing stock transactions:", err);
+            return [];
+        }
+    }
+};
+
+export const transferStock = async (params: {
+    cylinderType: CylinderType;
+    fromLocationId: string;
+    toLocationId: string;
+    filledCount: number;
+    emptyCount: number;
+    note?: string;
+    createdByName?: string;
+}): Promise<void> => {
+    const fromRef = stockLocationsCollection.doc(params.fromLocationId);
+    const toRef = stockLocationsCollection.doc(params.toLocationId);
+
+    await db.runTransaction(async (t: any) => {
+        const fromDoc = await t.get(fromRef);
+        const toDoc = await t.get(toRef);
+
+        if (!fromDoc.exists || !toDoc.exists) throw new Error("Stock location not found");
+
+        const fromData = fromDoc.data();
+        const toData = toDoc.data();
+
+        const fromStock = fromData.stock || {};
+        const toStock = toData.stock || {};
+
+        const cType = params.cylinderType;
+        const currentFrom = fromStock[cType] || { filled: 0, empty: 0 };
+        const currentTo = toStock[cType] || { filled: 0, empty: 0 };
+
+        if (currentFrom.filled < params.filledCount || currentFrom.empty < params.emptyCount) {
+            throw new Error(`Insufficient stock in ${fromData.name} for transfer.`);
+        }
+
+        const newFrom = {
+            filled: currentFrom.filled - params.filledCount,
+            empty: currentFrom.empty - params.emptyCount,
+        };
+        const newTo = {
+            filled: currentTo.filled + params.filledCount,
+            empty: currentTo.empty + params.emptyCount,
+        };
+
+        t.update(fromRef, {
+            [`stock.${cType}`]: newFrom,
+            updatedAt: new Date().toISOString(),
+        });
+        t.update(toRef, {
+            [`stock.${cType}`]: newTo,
+            updatedAt: new Date().toISOString(),
+        });
+
+        const txRef = stockTransactionsCollection.doc();
+        t.set(txRef, sanitize({
+            type: 'transfer',
+            cylinderType: cType,
+            fromLocationId: params.fromLocationId,
+            toLocationId: params.toLocationId,
+            filledDelta: params.filledCount,
+            emptyDelta: params.emptyCount,
+            createdAt: new Date().toISOString(),
+            createdByName: params.createdByName || 'Admin',
+            note: params.note || `Transferred ${params.filledCount} filled & ${params.emptyCount} empty from ${fromData.name} to ${toData.name}`,
+        }));
+    });
+};
+
+export const adjustStock = async (params: {
+    locationId: string;
+    cylinderType: CylinderType;
+    filledDelta: number;
+    emptyDelta: number;
+    note?: string;
+    createdByName?: string;
+}): Promise<void> => {
+    const locRef = stockLocationsCollection.doc(params.locationId);
+
+    await db.runTransaction(async (t: any) => {
+        const locDoc = await t.get(locRef);
+        if (!locDoc.exists) throw new Error("Stock location not found");
+
+        const data = locDoc.data();
+        const currentStock = (data.stock && data.stock[params.cylinderType]) || { filled: 0, empty: 0 };
+
+        const newFilled = Math.max(0, currentStock.filled + params.filledDelta);
+        const newEmpty = Math.max(0, currentStock.empty + params.emptyDelta);
+
+        t.update(locRef, {
+            [`stock.${params.cylinderType}`]: { filled: newFilled, empty: newEmpty },
+            updatedAt: new Date().toISOString(),
+        });
+
+        const txRef = stockTransactionsCollection.doc();
+        t.set(txRef, sanitize({
+            type: 'adjustment',
+            cylinderType: params.cylinderType,
+            fromLocationId: params.locationId,
+            toLocationId: params.locationId,
+            filledDelta: params.filledDelta,
+            emptyDelta: params.emptyDelta,
+            createdAt: new Date().toISOString(),
+            createdByName: params.createdByName || 'Admin',
+            note: params.note || `Manual adjustment at ${data.name}: Filled (${params.filledDelta > 0 ? '+' : ''}${params.filledDelta}), Empty (${params.emptyDelta > 0 ? '+' : ''}${params.emptyDelta})`,
+        }));
     });
 };
 

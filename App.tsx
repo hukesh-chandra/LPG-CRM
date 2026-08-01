@@ -8,11 +8,13 @@ import AddCustomerPage from './pages/AddCustomerPage';
 import CustomerDetailPage from './pages/CustomerDetailPage';
 import AdminPage from './pages/AdminPage';
 import DeliveryPage from './pages/DeliveryPage';
+import AssignDeliveryPage from './pages/AssignDeliveryPage';
+import StockPage from './pages/StockPage';
 import BookingsPage from './pages/BookingsPage';
 import GasTransactionsPage from './pages/GasTransactionsPage';
 import PasswordModal from './components/PasswordModal';
 import { useDarkMode } from './hooks/useDarkMode';
-import { checkAdminPassword } from './services/api';
+import { checkAdminPassword, getCurrentAuthAppUser } from './services/api';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
 export type Route =
@@ -20,6 +22,8 @@ export type Route =
   | { name: 'customers' }
   | { name: 'add-customer' }
   | { name: 'deliveries' }
+  | { name: 'assign-delivery' }
+  | { name: 'stock' }
   | { name: 'bookings' }
   | { name: 'gas-transactions' }
   | { name: 'admin' }
@@ -39,6 +43,10 @@ const parseRoute = (hash: string): Route => {
             return { name: 'add-customer' };
         case 'deliveries':
             return { name: 'deliveries' };
+        case 'assign-delivery':
+            return { name: 'assign-delivery' };
+        case 'stock':
+            return { name: 'stock' };
         case 'bookings':
             return { name: 'bookings' };
         case 'gas-transactions':
@@ -50,8 +58,6 @@ const parseRoute = (hash: string): Route => {
     }
 };
 
-
-
 const AppContent: React.FC = () => {
     useDarkMode();
     const { t } = useLanguage();
@@ -59,6 +65,7 @@ const AppContent: React.FC = () => {
     const [route, setRoute] = useState(() => parseRoute(window.location.hash));
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [checkingAuth, setCheckingAuth] = useState(true);
 
     useEffect(() => {
         // Auto-close sidebar on route change for mobile
@@ -72,6 +79,17 @@ const AppContent: React.FC = () => {
 
         window.addEventListener('hashchange', handleHashChange);
         handleHashChange(); // Check route on initial load
+
+        // Check firebase auth state
+        getCurrentAuthAppUser().then(user => {
+            if (user && user.role === 'admin') {
+                setIsAuthenticated(true);
+            }
+            setCheckingAuth(false);
+        }).catch(() => {
+            setCheckingAuth(false);
+        });
+
         return () => window.removeEventListener('hashchange', handleHashChange);
     }, []); 
     
@@ -94,6 +112,10 @@ const AppContent: React.FC = () => {
                 return <AddCustomerPage />;
             case 'deliveries':
                 return <DeliveryPage />;
+            case 'assign-delivery':
+                return <AssignDeliveryPage />;
+            case 'stock':
+                return <StockPage />;
             case 'bookings':
                 return <BookingsPage />;
             case 'gas-transactions':
@@ -107,6 +129,14 @@ const AppContent: React.FC = () => {
                 return <div className="text-center p-8">{t('app.pageNotFound')}</div>;
         }
     };
+
+    if (checkingAuth) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-500">
+                Loading...
+            </div>
+        );
+    }
 
     if (!isAuthenticated) {
         return (

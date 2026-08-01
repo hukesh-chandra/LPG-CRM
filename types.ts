@@ -62,12 +62,63 @@ export interface TransactionHistory {
   };
 }
 
+export type PaymentMethod = 'cash' | 'online';
+
+export type CylinderType = '14KG_HP' | '14KG_IN' | '14KG_BH' | '5KG' | 'COMMERCIAL';
+
+export const CYLINDER_TYPES: CylinderType[] = ['14KG_HP', '14KG_IN', '14KG_BH', '5KG', 'COMMERCIAL'];
+
+export const DOMESTIC_14KG_CYLINDERS: CylinderType[] = ['14KG_HP', '14KG_IN', '14KG_BH'];
+
+export const CYLINDER_TYPE_LABELS: Record<CylinderType, string> = {
+  '14KG_HP': '14.2kg HP Gas',
+  '14KG_IN': '14.2kg Indane',
+  '14KG_BH': '14.2kg Bharat',
+  '5KG': '5kg Domestic',
+  'COMMERCIAL': '19kg Commercial',
+};
+
+export interface AppUser {
+  uid: string;
+  email?: string;
+  name: string;
+  mobileNo: string;
+  role: 'admin' | 'delivery_boy';
+  active: boolean;
+  createdAt?: string;
+}
+
+export interface StockLocation {
+  id: string;
+  name: string;
+  type: 'godown' | 'vehicle';
+  stock: Partial<Record<CylinderType, { filled: number; empty: number }>>;
+  updatedAt?: string;
+}
+
+export interface StockTransaction {
+  id: string;
+  type: 'transfer' | 'delivery' | 'direct_sale' | 'adjustment';
+  cylinderType: CylinderType;
+  fromLocationId?: string;
+  toLocationId?: string;
+  filledDelta: number;
+  emptyDelta: number;
+  locationDeltas?: Record<string, { filled: number; empty: number }>;
+  deliveryId?: string;
+  createdAt: string;
+  createdBy?: string;
+  createdByName?: string;
+  note?: string;
+}
+
 export interface Transaction {
   id: string;
   customerId?: string;
   date: string;
   price: number;
   amountPaid: number;
+  paymentMethod?: PaymentMethod;
   description: string;
   gasCompanyGiven: string;
   gasCompanyReceived?: string;
@@ -77,6 +128,8 @@ export interface Transaction {
   walkInMobile?: string;
   walkInConsumerNo?: string;
 }
+
+export type DeliveryStatus = 'pending' | 'out_for_delivery' | 'completed' | 'cancelled' | 'cannot_deliver';
 
 export interface Delivery {
     id: string;
@@ -88,6 +141,17 @@ export interface Delivery {
     customerAddress: string;
     requestedAt: string;
     completedAt?: string | null;
+    status?: DeliveryStatus;
+    assignedTo?: string | null;
+    assignedVehicleId?: string | null;
+    assignedAt?: string | null;
+    cylinderType?: CylinderType | null;
+    filledHandedOver?: number;
+    emptiesReceived?: number;
+    completedBy?: string | null;
+    undeliveredReason?: string | null;
+    undeliveredAt?: string | null;
+    undeliveredBy?: string | null;
 }
 
 export type NewCustomer = Omit<Customer, 'id' | 'isDeleted'>;

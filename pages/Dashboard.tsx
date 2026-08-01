@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getDashboardStats, getCustomers, addTransaction, isCustomerUnbooked } from '../services/api';
+import { getDashboardStats, getCustomers, addTransaction, isCustomerUnbooked, getEligibleBookingDate, getBookingCycleDays, listStockLocations, listStockTransactions } from '../services/api';
 import Card from '../components/Card';
 import DataTable, { Column } from '../components/DataTable';
-import { Transaction, Customer } from '../types';
+import { Transaction, Customer, StockLocation, StockTransaction, CYLINDER_TYPE_LABELS, DOMESTIC_14KG_CYLINDERS } from '../types';
 import { UsersIcon, CurrencyDollarIcon, TruckIcon, ShieldCheckIcon, ClockIcon } from '../components/icons/Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { CustomerInfo } from '../components/CustomerInfo';
-
 import { GAS_COMPANIES } from '../constants';
 
 interface DashboardStats {
@@ -21,7 +20,8 @@ interface DashboardStats {
 }
 
 const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorded }) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
+    const locale = language === 'hi' ? 'hi-IN' : 'en-IN';
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchBy, setSearchBy] = useState<'mobileNo' | 'name' | 'relationName' | 'consumerNo' | 'customerId'>('mobileNo');
@@ -32,6 +32,7 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
     const [formData, setFormData] = useState({
         price: '',
         amountPaid: '',
+        paymentMethod: 'cash',
         description: '14.2kg Refill',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,13 +84,36 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
             return;
         }
 
+        const numericPrice = Number(formData.price);
+        const is14kgRefill = formData.description.toLowerCase().includes('14.2') || formData.description.toLowerCase().includes('14kg') || formData.description.toLowerCase().includes('refill') || !formData.description;
+
+        // OUT-OF-CYCLE PRICE WARNING FOR 14.2KG REFILLS
+        if (selectedCustomer && selectedCustomer.lastBookingDate && is14kgRefill) {
+            const isUnbooked = isCustomerUnbooked(selectedCustomer.lastBookingDate, selectedCustomer.agencyName);
+            if (!isUnbooked && numericPrice < 1600) {
+                const cycleDays = getBookingCycleDays(selectedCustomer.agencyName);
+                const eligibleDate = getEligibleBookingDate(selectedCustomer.lastBookingDate, selectedCustomer.agencyName);
+                const warningMsg = `⚠️ OUT-OF-CYCLE REFILL WARNING:\n\n` +
+                    `Customer ${selectedCustomer.name} booked recently on ${new Date(selectedCustomer.lastBookingDate).toLocaleDateString(locale)}.\n` +
+                    `Their ${cycleDays}-day booking cycle is NOT complete yet (Eligible date: ${eligibleDate.toLocaleDateString(locale)}).\n\n` +
+                    `For out-of-cycle refills, the standard non-subsidized price should be at least ₹1,600.\n` +
+                    `You have entered ₹${numericPrice}.\n\n` +
+                    `Are you sure you want to proceed with ₹${numericPrice}?`;
+                
+                if (!window.confirm(warningMsg)) {
+                    return; // Stop submission if user cancels
+                }
+            }
+        }
+
         setIsSubmitting(true);
         try {
             const transactionData: any = {
-                price: Number(formData.price),
+                price: numericPrice,
                 amountPaid: Number(formData.amountPaid),
+                paymentMethod: formData.paymentMethod,
                 description: formData.description,
-                gasCompanyGiven: GAS_COMPANIES[0],
+                gasCompanyGiven: selectedCustomer?.agencyName || GAS_COMPANIES[0],
                 source: 'quick-sell' as const,
             };
 
@@ -114,6 +138,7 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
             setFormData({
                 price: '',
                 amountPaid: '',
+                paymentMethod: 'cash',
                 description: '14.2kg Refill',
             });
             setSearchQuery('');
@@ -185,6 +210,21 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
                     <Input label={t('dashboard.quickSell.description')} name="description" value={formData.description} onChange={handleChange} required />
                     <Input label={t('dashboard.quickSell.price')} name="price" type="number" value={formData.price} onChange={handleChange} required />
                     <Input label={t('dashboard.quickSell.amountPaid')} name="amountPaid" type="number" value={formData.amountPaid} onChange={handleChange} required />
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Payment Method
+                        </label>
+                        <select
+                            name="paymentMethod"
+                            value={formData.paymentMethod}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        >
+                            <option value="cash">Cash Payment</option>
+                            <option value="online">Online / UPI Transfer</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div className="flex justify-end">
@@ -199,6 +239,8 @@ const QuickSellForm: React.FC<{ onSaleRecorded: () => void }> = ({ onSaleRecorde
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stockLocations, setStockLocations] = useState<StockLocation[]>([]);
+  const [stockLogs, setStockLogs] = useState<StockTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<{start: Date | null, end: Date | null}>({ start: null, end: null });
   const [activeFilter, setActiveFilter] = useState('all');
@@ -209,8 +251,14 @@ const Dashboard: React.FC = () => {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const data = await getDashboardStats(dateRange.start && dateRange.end ? { start: dateRange.start, end: dateRange.end } : undefined);
+      const [data, locs, txs] = await Promise.all([
+        getDashboardStats(dateRange.start && dateRange.end ? { start: dateRange.start, end: dateRange.end } : undefined),
+        listStockLocations(),
+        listStockTransactions(10),
+      ]);
       setStats(data);
+      setStockLocations(locs);
+      setStockLogs(txs);
     } catch (error) {
       console.error('Failed to fetch dashboard stats', error);
     } finally {
@@ -266,6 +314,16 @@ const Dashboard: React.FC = () => {
     return <div className="text-center p-8">{t('messages.loadingDashboard')}</div>;
   }
 
+  // Calculate total 14.2kg stocks on Home Page
+  const stock14kgSummary = stockLocations.reduce((acc, loc) => {
+    DOMESTIC_14KG_CYLINDERS.forEach(type => {
+      const s = loc.stock?.[type] || { filled: 0, empty: 0 };
+      acc.filled += s.filled || 0;
+      acc.empty += s.empty || 0;
+    });
+    return acc;
+  }, { filled: 0, empty: 0 });
+
   return (
     <div className="space-y-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -286,7 +344,75 @@ const Dashboard: React.FC = () => {
         <Card title={t('dashboard.outstandingBalance')} value={`₹${(stats?.totalOutstanding ?? 0).toLocaleString(locale)}`} icon={<CurrencyDollarIcon className="w-8 h-8 text-red-500"/>} />
       </div>
 
+      {/* 14.2kg Stock Overview Card on Home Page */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+        <div className="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
+            <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    📦 Stock Overview (14.2kg Domestic Refills)
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Live cylinder inventory counts across Godown, Showroom Counter, and Delivery Vehicles.
+                </p>
+            </div>
+            <div className="flex items-center gap-4">
+                <div className="text-right">
+                    <span className="text-xs text-gray-400 block">Total 14.2kg Filled</span>
+                    <span className="text-lg font-bold text-green-600 dark:text-green-400">{stock14kgSummary.filled} units</span>
+                </div>
+                <div className="text-right">
+                    <span className="text-xs text-gray-400 block">Total 14.2kg Empties</span>
+                    <span className="text-lg font-bold text-amber-600 dark:text-amber-400">{stock14kgSummary.empty} units</span>
+                </div>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {stockLocations.map((loc) => (
+                <div key={loc.id} className="bg-gray-50 dark:bg-gray-700/50 p-3.5 rounded-md border border-gray-200 dark:border-gray-600 space-y-2">
+                    <h4 className="font-semibold text-xs text-gray-800 dark:text-gray-200 uppercase tracking-wide">
+                        {loc.name}
+                    </h4>
+                    {DOMESTIC_14KG_CYLINDERS.map((type) => {
+                        const s = loc.stock?.[type] || { filled: 0, empty: 0 };
+                        return (
+                            <div key={type} className="flex justify-between text-xs py-0.5 border-b border-gray-100 dark:border-gray-600/50 last:border-b-0">
+                                <span className="text-gray-600 dark:text-gray-400">{CYLINDER_TYPE_LABELS[type]}</span>
+                                <div>
+                                    <span className="text-green-600 font-medium mr-2">{s.filled}F</span>
+                                    <span className="text-amber-600 font-medium">{s.empty}E</span>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            ))}
+        </div>
+      </div>
+
       <QuickSellForm onSaleRecorded={fetchStats} />
+
+      {/* Recent Stock Log on Home Page */}
+      {stockLogs.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700 space-y-3">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">Recent Stock Movements</h3>
+            <div className="space-y-2">
+                {stockLogs.slice(0, 5).map(log => (
+                    <div key={log.id} className="flex justify-between items-center text-xs p-2.5 rounded bg-gray-50 dark:bg-gray-700/50">
+                        <div>
+                            <span className="font-semibold text-gray-800 dark:text-gray-200 mr-2">
+                                [{log.type.toUpperCase()}] {CYLINDER_TYPE_LABELS[log.cylinderType] || log.cylinderType}
+                            </span>
+                            <span className="text-gray-500 dark:text-gray-400">{log.note}</span>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-gray-400 block text-[10px]">{new Date(log.createdAt).toLocaleTimeString(locale)}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+      )}
 
       <div>
         <h3 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">{t('dashboard.recentTransactions')}</h3>

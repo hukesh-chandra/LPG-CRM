@@ -18,6 +18,10 @@ const getIsActive = (to: string, currentRoute: Route): boolean => {
             return currentRoute.name === 'customers' || currentRoute.name === 'customer-detail' || currentRoute.name === 'add-customer';
         case '/deliveries':
             return currentRoute.name === 'deliveries';
+        case '/assign-delivery':
+            return currentRoute.name === 'assign-delivery';
+        case '/stock':
+            return currentRoute.name === 'stock';
         case '/bookings':
             return currentRoute.name === 'bookings';
         case '/gas-transactions':
@@ -82,6 +86,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentRoute, isOpen, onClose }) => {
           <NavItem to="/" icon={<DashboardIcon className="w-6 h-6" />} label={t('sidebar.dashboard')} currentRoute={currentRoute} />
           <NavItem to="/customers" icon={<UsersIcon className="w-6 h-6" />} label={t('sidebar.customers')} currentRoute={currentRoute} />
           <NavItem to="/deliveries" icon={<TruckIcon className="w-6 h-6" />} label={t('sidebar.deliveries')} currentRoute={currentRoute} />
+          <NavItem to="/assign-delivery" icon={<TruckIcon className="w-6 h-6 text-indigo-500" />} label="Assign Delivery" currentRoute={currentRoute} />
+          <NavItem to="/stock" icon={<GasCylinderIcon className="w-6 h-6 text-amber-500" />} label="Stock Ledger" currentRoute={currentRoute} />
           <NavItem to="/bookings" icon={<ClockIcon className="w-6 h-6" />} label={t('sidebar.bookings')} currentRoute={currentRoute} />
           <NavItem to="/gas-transactions" icon={<DocumentTextIcon className="w-6 h-6" />} label={t('sidebar.gasTransactions')} currentRoute={currentRoute} />
           <NavItem to="/admin" icon={<ShieldCheckIcon className="w-6 h-6" />} label={t('sidebar.admin')} currentRoute={currentRoute} />

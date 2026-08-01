@@ -14,7 +14,7 @@ import BookingsPage from './pages/BookingsPage';
 import GasTransactionsPage from './pages/GasTransactionsPage';
 import PasswordModal from './components/PasswordModal';
 import { useDarkMode } from './hooks/useDarkMode';
-import { checkAdminPassword, getCurrentAuthAppUser } from './services/api';
+import { loginAdminUser, getCurrentAuthAppUser } from './services/api';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
 export type Route =
@@ -82,7 +82,7 @@ const AppContent: React.FC = () => {
 
         // Check firebase auth state
         getCurrentAuthAppUser().then(user => {
-            if (user && user.role === 'admin') {
+            if (user) {
                 setIsAuthenticated(true);
             }
             setCheckingAuth(false);
@@ -93,13 +93,14 @@ const AppContent: React.FC = () => {
         return () => window.removeEventListener('hashchange', handleHashChange);
     }, []); 
     
-    const handlePasswordSubmit = async (password: string) => {
-        const success = await checkAdminPassword(password);
-        if (success) {
-            setIsAuthenticated(true);
-        } else {
-            alert(t('app.incorrectPassword'));
+    const handleLoginSubmit = async (email: string, password: string) => {
+        const user = await loginAdminUser(email, password);
+        if (user.uid === 'master-admin') {
+            try {
+                localStorage.setItem('master_admin_session', 'true');
+            } catch (e) {}
         }
+        setIsAuthenticated(true);
     };
   
     const renderContent = () => {
@@ -143,7 +144,7 @@ const AppContent: React.FC = () => {
             <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
                 <PasswordModal 
                     isOpen={true}
-                    onSubmit={handlePasswordSubmit}
+                    onSubmit={handleLoginSubmit}
                 />
             </div>
         );

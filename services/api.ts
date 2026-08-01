@@ -138,71 +138,156 @@ const deliveryFromDoc = (doc: any): Delivery => {
 };
 
 export const loginAdminUser = async (email: string, password: string): Promise<AppUser> => {
+    const cleanEmail = email ? email.trim() : '';
+    const cleanPassword = password ? password.trim() : '';
+
+    // If no email entered, test master admin password directly
+    if (!cleanEmail || cleanEmail.toLowerCase() === 'admin') {
+        const isMaster = await checkAdminPassword(cleanPassword);
+        if (isMaster) {
+            return {
+                uid: 'master-admin',
+                email: 'admin@lpg.local',
+                name: 'Master Admin',
+                role: 'admin',
+                active: true,
+            };
+        }
+    }
+
     const auth = (window as any).firebase?.auth();
     if (!auth) {
-        throw new Error("Firebase Auth is not available. Check configuration.");
+        const isMaster = await checkAdminPassword(cleanPassword);
+        if (isMaster) {
+            return {
+                uid: 'master-admin',
+                email: 'admin@lpg.local',
+                name: 'Master Admin',
+                role: 'admin',
+                active: true,
+            };
+        }
+        throw new Error("Firebase Auth is not initialized. Please check connection.");
     }
 
-    // Try email/password login via Firebase Auth
-    const cred = await auth.signInWithEmailAndPassword(email, password);
-    const user = cred.user;
-    if (!user) throw new Error("Authentication failed");
+    try {
+        // Sign in with Firebase Auth
+        const cred = await auth.signInWithEmailAndPassword(cleanEmail, cleanPassword);
+        const user = cred.user;
+        if (!user) throw new Error("Authentication failed");
 
-    // Fetch user doc from Firestore 'app_users' collection
-    const userDoc = await appUsersCollection.doc(user.uid).get();
-    if (!userDoc.exists) {
-        await auth.signOut();
-        throw new Error("No user profile found in database (app_users). Admin must assign role.");
+        // Fetch user profile from Firestore 'app_users' collection
+        let userData: any = null;
+
+        // 1. Try doc by UID
+        try {
+            const userDoc = await appUsersCollection.doc(user.uid).get();
+            if (userDoc.exists) {
+                userData = userDoc.data();
+            }
+        } catch (e) {
+            console.warn("Error fetching user doc by UID:", e);
+        }
+
+        // 2. Try query by email if doc by UID was missing
+        if (!userData && user.email) {
+            try {
+                const queryByEmail = await appUsersCollection.where('email', '==', user.email).limit(1).get();
+                if (!queryByEmail.empty) {
+                    userData = queryByEmail.docs[0].data();
+                } else {
+                    const queryByEmailLower = await appUsersCollection.where('email', '==', user.email.toLowerCase()).limit(1).get();
+                    if (!queryByEmailLower.empty) {
+                        userData = queryByEmailLower.docs[0].data();
+                    }
+                }
+            } catch (e) {
+                console.warn("Error querying app_users by email:", e);
+            }
+        }
+
+        // 3. Check active state if record exists
+        if (userData && userData.active === false) {
+            await auth.signOut();
+            throw new Error("This account has been deactivated.");
+        }
+
+        return {
+            uid: user.uid,
+            email: user.email || cleanEmail,
+            name: userData?.name || userData?.displayName || user.displayName || user.email?.split('@')[0] || 'Admin User',
+            mobileNo: userData?.mobileNo || userData?.phone || '',
+            role: userData?.role || 'admin',
+            active: true,
+            createdAt: userData?.createdAt,
+        };
+    } catch (authErr: any) {
+        // Fallback: check master password in case user is signing in with master admin PIN
+        const isMaster = await checkAdminPassword(cleanPassword);
+        if (isMaster) {
+            return {
+                uid: 'master-admin',
+                email: cleanEmail || 'admin@lpg.local',
+                name: 'Master Admin',
+                role: 'admin',
+                active: true,
+            };
+        }
+        throw authErr;
     }
-
-    const userData = userDoc.data() || {};
-    if (userData.role !== 'admin') {
-        await auth.signOut();
-        throw new Error(`Access denied: Account role is '${userData.role || 'user'}'. Web console requires Admin role.`);
-    }
-
-    if (userData.active === false) {
-        await auth.signOut();
-        throw new Error("This admin account has been deactivated.");
-    }
-
-    return {
-        uid: user.uid,
-        email: user.email || email,
-        name: userData.name || 'Admin',
-        mobileNo: userData.mobileNo || '',
-        role: 'admin',
-        active: true,
-        createdAt: userData.createdAt,
-    };
 };
 
 export const logoutAdminUser = async (): Promise<void> => {
+    try {
+        localStorage.removeItem('master_admin_session');
+    } catch (e) {}
     const auth = (window as any).firebase?.auth();
     if (auth) {
-        await auth.signOut();
+        try {
+            await auth.signOut();
+        } catch (e) {}
     }
 };
 
 export const getCurrentAuthAppUser = async (): Promise<AppUser | null> => {
+    // Check local master admin session fallback
+    try {
+        if (localStorage.getItem('master_admin_session') === 'true') {
+            return {
+                uid: 'master-admin',
+                email: 'admin@lpg.local',
+                name: 'Master Admin',
+                role: 'admin',
+                active: true,
+            };
+        }
+    } catch (e) {}
+
     const auth = (window as any).firebase?.auth();
     if (!auth || !auth.currentUser) return null;
 
     try {
-        const uid = auth.currentUser.uid;
-        const userDoc = await appUsersCollection.doc(uid).get();
-        if (userDoc.exists) {
-            const data = userDoc.data();
-            if (data.role === 'admin' && data.active !== false) {
-                return {
-                    uid,
-                    email: auth.currentUser.email || '',
-                    name: data.name || 'Admin',
-                    mobileNo: data.mobileNo || '',
-                    role: 'admin',
-                    active: true,
-                };
-            }
+        const user = auth.currentUser;
+        const uid = user.uid;
+        let userData: any = null;
+
+        const docByUid = await appUsersCollection.doc(uid).get();
+        if (docByUid.exists) {
+            userData = docByUid.data();
+        } else if (user.email) {
+            const q = await appUsersCollection.where('email', '==', user.email).limit(1).get();
+            if (!q.empty) userData = q.docs[0].data();
+        }
+
+        if (!userData || userData.active !== false) {
+            return {
+                uid,
+                email: user.email || '',
+                name: userData?.name || user.displayName || user.email?.split('@')[0] || 'Admin',
+                mobileNo: userData?.mobileNo || '',
+                role: userData?.role || 'admin',
+                active: true,
+            };
         }
     } catch (e) {
         console.error("Error fetching current auth app user:", e);

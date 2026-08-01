@@ -64,9 +64,9 @@ export interface TransactionHistory {
 
 export type PaymentMethod = 'cash' | 'online';
 
-export type CylinderType = '14KG_HP' | '14KG_IN' | '14KG_BH' | '5KG' | 'COMMERCIAL';
+export type CylinderType = '14KG_HP' | '14KG_IN' | '14KG_BH' | '5KG' | 'COMMERCIAL_19KG' | 'COMMERCIAL_14KG';
 
-export const CYLINDER_TYPES: CylinderType[] = ['14KG_HP', '14KG_IN', '14KG_BH', '5KG', 'COMMERCIAL'];
+export const CYLINDER_TYPES: CylinderType[] = ['14KG_HP', '14KG_IN', '14KG_BH', '5KG', 'COMMERCIAL_19KG', 'COMMERCIAL_14KG'];
 
 export const DOMESTIC_14KG_CYLINDERS: CylinderType[] = ['14KG_HP', '14KG_IN', '14KG_BH'];
 
@@ -75,7 +75,8 @@ export const CYLINDER_TYPE_LABELS: Record<CylinderType, string> = {
   '14KG_IN': '14.2kg Indane',
   '14KG_BH': '14.2kg Bharat',
   '5KG': '5kg Domestic',
-  'COMMERCIAL': '19kg Commercial',
+  'COMMERCIAL_19KG': '19kg Commercial',
+  'COMMERCIAL_14KG': '14kg Commercial',
 };
 
 export interface AppUser {
